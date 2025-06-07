@@ -1,4 +1,4 @@
 const MONGO_CONN_URL = 
-'mongodb+srv://<DatabaseCollection>:<Password>>@<AtlasProjectName>.efpsx.mongodb.net/<DatabaseName>?retryWrites=true&w=majority&appName=<AtlasProjectName>';
-const USER_COLLECTION = '<DatabaseCollection>';
+'mongodb+srv://KFC:FMxZgYJlImkbqXLE@cluster0.efpsx.mongodb.net/KFCSellers?retryWrites=true&w=majority&appName=Cluster0';
+const USER_COLLECTION = 'KFC';
 

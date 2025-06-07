@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kfc_seller/Screens/Register.dart';
+import 'package:kfc_seller/Screens/forgot_password_screen.dart';
 import 'package:kfc_seller/Screens/home_screen.dart';
 import 'package:kfc_seller/DbHelper/mongdb.dart';
 
@@ -110,7 +111,10 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _navigateToForgotPassword() {
-    Navigator.pushNamed(context, '/forgot-password');
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => ForgotPasswordScreen()),
+    );
   }
 
   @override
