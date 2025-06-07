@@ -14,6 +14,7 @@ class Mongodbmodel {
     String email;
     String password;
     String rePassword;
+    String role; // <--- THÊM DÒNG NÀY
 
     Mongodbmodel({
         required this.id,
@@ -21,6 +22,7 @@ class Mongodbmodel {
         required this.email,
         required this.password,
         required this.rePassword,
+        required this.role, // <--- THÊM DÒNG NÀY
     });
 
     factory Mongodbmodel.fromJson(Map<String, dynamic> json) => Mongodbmodel(
@@ -29,6 +31,7 @@ class Mongodbmodel {
         email: json["Email"],
         password: json["Password"],
         rePassword: json["RePassword"],
+        role: json["Role"], // <--- THÊM DÒNG NÀY
     );
 
     Map<String, dynamic> toJson() => {
@@ -37,5 +40,6 @@ class Mongodbmodel {
         "Email": email,
         "Password": password,
         "RePassword": rePassword,
+        "Role": role, // <--- THÊM DÒNG NÀY
     };
 }

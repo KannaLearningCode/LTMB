@@ -4,6 +4,7 @@ import 'home_tab.dart';
 import 'menu_tab.dart';
 import 'cart_tab.dart';
 import 'more_tab.dart';
+import 'profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -38,8 +39,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _navigateToProfile() {
-    // TODO: Điều hướng đến trang chi tiết tài khoản
-    print("Navigate to profile");
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProfileScreen(),
+      ),
+    );
   }
 
   Future<bool> _onWillPop() async {
@@ -121,13 +126,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     shape: BoxShape.circle,
                     color: Colors.grey[200],
                     border: Border.all(
-                      color: Color.fromARGB(255, 0, 0, 0),
+                      color: Color(0xFFB7252A),
                       width: 2,
                     ),
                   ),
                   child: Icon(
                     Icons.person,
-                    color: Color.fromARGB(255, 0, 0, 0),
+                    color: Color(0xFFB7252A),
                     size: 24,
                   ),
                 ),

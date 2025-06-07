@@ -298,7 +298,9 @@ Future<bool> _checkEmailExists(String email) async {
       name: name,
       email: email,
       password: password,
-      rePassword: rePassword);
+      rePassword: rePassword,
+      role : 'user' //
+      );
     
     try {
       var result = await MongoDatabase.insert(data);
