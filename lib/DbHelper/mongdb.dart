@@ -44,6 +44,7 @@ class MongoDatabase {
           email: "admin@kfc.com",
           password: "Admin@123",
           rePassword: "Admin@123",
+          phone: "0000000000",
           role: "admin"
         );
         

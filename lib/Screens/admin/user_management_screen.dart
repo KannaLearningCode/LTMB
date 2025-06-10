@@ -59,6 +59,12 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     children: [
                       Text(user['Email'] ?? 'Không có email'),
                       Text(
+                        'SĐT: ${user['Phone'] ?? 'Chưa cập nhật'}',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      Text(
                         'Vai trò: ${user['Role'] ?? 'user'}',
                         style: TextStyle(
                           color: user['Role'] == 'admin' 

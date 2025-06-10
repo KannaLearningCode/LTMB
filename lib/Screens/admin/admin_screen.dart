@@ -67,6 +67,7 @@ class AdminScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text('Quản lý KFC'),
         backgroundColor: Color(0xFFB7252A),
+        automaticallyImplyLeading: false,
       ),
       body: Container(
         padding: EdgeInsets.all(16),

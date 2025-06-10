@@ -4,6 +4,7 @@ import 'package:kfc_seller/Screens/forgot_password_screen.dart';
 import 'package:kfc_seller/Screens/home_screen.dart';
 import 'package:kfc_seller/Screens/admin/admin_screen.dart';
 import 'package:kfc_seller/DbHelper/mongdb.dart';
+import 'package:kfc_seller/utils/password_hash.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -70,40 +71,53 @@ class _LoginScreenState extends State<LoginScreen> {
       try {
         // Kiểm tra thông tin đăng nhập
         var userCollection = MongoDatabase.userCollection;
-        var user = await userCollection.findOne({
-          "Email": emailController.text,
-          "Password": passwordController.text
-        });
+        var user = await userCollection.findOne({"Email": emailController.text});
 
         if (user != null) {
-          // Đăng nhập thành công
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text("Đăng nhập thành công!"),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
-            ),
+          // Kiểm tra mật khẩu đã mã hóa
+          bool isPasswordValid = PasswordHash.verifyPassword(
+            passwordController.text,
+            user['Password'],
           );
 
-          // Kiểm tra role và chuyển hướng
-          if (user['Role'] == 'admin') {
-            // Chuyển đến trang admin
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => AdminScreen()),
+          if (isPasswordValid) {
+            // Đăng nhập thành công
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text("Đăng nhập thành công!"),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 2),
+              ),
             );
+
+            // Kiểm tra role và chuyển hướng
+            if (user['Role'] == 'admin') {
+              // Chuyển đến trang admin
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => AdminScreen()),
+              );
+            } else {
+              // Chuyển đến trang home cho user thường
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => HomeScreen()),
+              );
+            }
           } else {
-            // Chuyển đến trang home cho user thường
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => HomeScreen()),
+            // Mật khẩu không đúng
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text("Mật khẩu không chính xác!"),
+                backgroundColor: Colors.red,
+              ),
             );
           }
         } else {
-          // Mật khẩu không đúng
+          // Email không tồn tại
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text("Mật khẩu không chính xác!"),
+              content: Text("Email không tồn tại!"),
               backgroundColor: Colors.red,
             ),
           );

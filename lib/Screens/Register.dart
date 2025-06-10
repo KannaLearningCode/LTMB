@@ -4,6 +4,7 @@ import 'package:kfc_seller/Mongdbmodel.dart'; //
 
 import 'package:mongo_dart/mongo_dart.dart' as M;
 import 'package:kfc_seller/Screens/login_screen.dart'; // Thêm import login screen
+import 'package:kfc_seller/utils/password_hash.dart'; // Thêm import
 
 class MongoDbInsert extends StatefulWidget {
   MongoDbInsert({Key? key}) : super(key: key);
@@ -17,12 +18,14 @@ class _MongoDbInsertState extends State<MongoDbInsert> {
   var emailController = TextEditingController();
   var passwordController = TextEditingController();
   var repasswordController = TextEditingController();
+  var phoneController = TextEditingController(); // Thêm controller cho số điện thoại
   bool _obscurePassword = true;
   bool _obscureRePassword = true;
   
   // Thêm biến để theo dõi trạng thái validation
   bool _isNameValid = false;
   bool _isEmailValid = false;
+  bool _isPhoneValid = false; // Thêm biến kiểm tra số điện thoại
 
   // Hàm kiểm tra email hợp lệ
   bool _validateEmail(String email) {
@@ -32,6 +35,11 @@ class _MongoDbInsertState extends State<MongoDbInsert> {
   // Hàm kiểm tra tên hợp lệ (nhiều hơn 3 ký tự)
   bool _validateName(String name) {
     return name.trim().length > 3;
+  }
+
+  // Hàm kiểm tra số điện thoại hợp lệ
+  bool _validatePhone(String phone) {
+    return RegExp(r'^[0-9]{10}$').hasMatch(phone); // Kiểm tra 10 chữ số
   }
 
   @override
@@ -47,6 +55,12 @@ class _MongoDbInsertState extends State<MongoDbInsert> {
     emailController.addListener(() {
       setState(() {
         _isEmailValid = _validateEmail(emailController.text);
+      });
+    });
+
+    phoneController.addListener(() {
+      setState(() {
+        _isPhoneValid = _validatePhone(phoneController.text);
       });
     });
   }
@@ -133,6 +147,38 @@ class _MongoDbInsertState extends State<MongoDbInsert> {
               ),
               const SizedBox(height: 20),
               TextField(
+                controller: phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: InputDecoration(
+                  labelText: "Số điện thoại",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(
+                      color: phoneController.text.isNotEmpty && !_isPhoneValid 
+                          ? Colors.red 
+                          : Colors.grey
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(
+                      color: phoneController.text.isNotEmpty && !_isPhoneValid 
+                          ? Colors.red 
+                          : Color(0xFFB7252A)
+                    ),
+                  ),
+                  labelStyle: TextStyle(
+                    color: phoneController.text.isNotEmpty && !_isPhoneValid 
+                        ? Colors.red 
+                        : null
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              TextField(
                 controller: passwordController,
                 obscureText: _obscurePassword,
                 decoration: InputDecoration(
@@ -209,6 +255,7 @@ class _MongoDbInsertState extends State<MongoDbInsert> {
                         emailController.text,
                         passwordController.text,
                         repasswordController.text,
+                        phoneController.text,
                       );
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -278,8 +325,13 @@ Future<bool> _checkEmailExists(String email) async {
   }
 }
 
-  Future<void> insertData(String name, String email, String password, String rePassword) async {
-    // Kiểm tra email trùng
+  Future<void> insertData(
+    String name,
+    String email,
+    String password,
+    String rePassword,
+    String phone,
+  ) async {
     bool emailExists = await _checkEmailExists(email);
     if (emailExists) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -291,21 +343,23 @@ Future<bool> _checkEmailExists(String email) async {
       return;
     }
 
-    // Nếu email chưa tồn tại, tiếp tục đăng ký
+    // Mã hóa mật khẩu trước khi lưu
+    String hashedPassword = PasswordHash.hashPassword(password);
+
     var _id = M.ObjectId();
     final data = Mongodbmodel(
       id: _id.$oid,
       name: name,
       email: email,
-      password: password,
-      rePassword: rePassword,
-      role : 'user' //
-      );
+      password: hashedPassword, // Lưu mật khẩu đã mã hóa
+      rePassword: hashedPassword, // Lưu mật khẩu đã mã hóa
+      role: 'user',
+      phone: phone,
+    );
     
     try {
       var result = await MongoDatabase.insert(data);
-      if (result) {  // Kiểm tra kết quả insert
-        // Hiển thị thông báo đăng ký thành công
+      if (result) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("Đăng ký thành công!"),
@@ -314,7 +368,6 @@ Future<bool> _checkEmailExists(String email) async {
           ),
         );
         
-        // Chuyển về trang đăng nhập
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -345,6 +398,7 @@ Future<bool> _checkEmailExists(String email) async {
     emailController.clear();
     passwordController.clear();
     repasswordController.clear();
+    phoneController.clear(); // Clear số điện thoại
   }
 
   @override
@@ -353,6 +407,7 @@ Future<bool> _checkEmailExists(String email) async {
     emailController.dispose();
     passwordController.dispose();
     repasswordController.dispose();
+    phoneController.dispose(); // Dispose controller số điện thoại
     super.dispose();
   }
 }

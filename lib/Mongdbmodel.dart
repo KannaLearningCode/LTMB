@@ -15,6 +15,7 @@ class Mongodbmodel {
     String password;
     String rePassword;
     String role; // <--- THÊM DÒNG NÀY
+    String phone; // Thêm trường phone
 
     Mongodbmodel({
         required this.id,
@@ -23,6 +24,7 @@ class Mongodbmodel {
         required this.password,
         required this.rePassword,
         required this.role, // <--- THÊM DÒNG NÀY
+        required this.phone, // Thêm vào constructor
     });
 
     factory Mongodbmodel.fromJson(Map<String, dynamic> json) => Mongodbmodel(
@@ -32,6 +34,7 @@ class Mongodbmodel {
         password: json["Password"],
         rePassword: json["RePassword"],
         role: json["Role"], // <--- THÊM DÒNG NÀY
+        phone: json["Phone"] ?? "", // Thêm vào fromJson với giá trị mặc định là chuỗi rỗng
     );
 
     Map<String, dynamic> toJson() => {
@@ -41,5 +44,6 @@ class Mongodbmodel {
         "Password": password,
         "RePassword": rePassword,
         "Role": role, // <--- THÊM DÒNG NÀY
+        "Phone": phone, // Thêm vào toJson
     };
 }
