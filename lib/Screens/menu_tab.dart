@@ -1,3 +1,10 @@
+// File: menu_tab.dart
+// Mục đích: Màn hình hiển thị thực đơn của KFC
+// Chức năng: 
+// - Hiển thị danh sách món ăn
+// - Cho phép xem chi tiết và thêm món vào giỏ hàng
+// - Có thanh header và footer để điều hướng
+
 import 'package:flutter/material.dart';
 
 class MenuTab extends StatelessWidget {
@@ -5,11 +12,9 @@ class MenuTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        'Thực đơn',
-        style: TextStyle(fontSize: 24, color: Colors.white),
-      ),
+    return Scaffold(
+      // AppBar hiển thị tiêu đề và các nút chức năng
+    
     );
   }
 } 

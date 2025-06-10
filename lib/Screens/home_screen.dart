@@ -86,11 +86,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildHeader() {
     return Container(
       padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 20,
+        top: MediaQuery.of(context).padding.top + 30,
         bottom: 15,
       ),
       child: Container(
-        margin: EdgeInsets.symmetric(horizontal: 16.0),
+        margin: EdgeInsets.symmetric(horizontal:0),
         height: 60,
         decoration: BoxDecoration(
           color: Colors.white,

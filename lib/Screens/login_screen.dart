@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kfc_seller/Screens/Register.dart';
 import 'package:kfc_seller/Screens/forgot_password_screen.dart';
 import 'package:kfc_seller/Screens/home_screen.dart';
+import 'package:kfc_seller/Screens/admin/admin_screen.dart';
 import 'package:kfc_seller/DbHelper/mongdb.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -84,11 +85,20 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           );
 
-          // Chuyển đến trang chủ
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => HomeScreen()),
-          );
+          // Kiểm tra role và chuyển hướng
+          if (user['Role'] == 'admin') {
+            // Chuyển đến trang admin
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => AdminScreen()),
+            );
+          } else {
+            // Chuyển đến trang home cho user thường
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => HomeScreen()),
+            );
+          }
         } else {
           // Mật khẩu không đúng
           ScaffoldMessenger.of(context).showSnackBar(

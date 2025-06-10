@@ -87,8 +87,8 @@ class HomeTab extends StatelessWidget {
                 crossAxisSpacing: 40,
                 childAspectRatio: 1,
                 children: [
-                  _buildCategoryItem('Khuyến mãi', 'assets/images/test.jpg'),
-                  _buildCategoryItem('Món mới', 'assets/images/test.jpg'),
+                  _buildCategoryItem('Khuyến mãi', 'assets/images/Discount.jpg'),
+                  _buildCategoryItem('Món mới', 'assets/images/New.jpg'),
                   _buildCategoryItem('Combo 1 người', 'assets/images/test.jpg'),
                   _buildCategoryItem('Combo nhóm', 'assets/images/test.jpg'),
                   _buildCategoryItem('Gà rán', 'assets/images/test.jpg'),
