@@ -81,14 +81,14 @@ class _LoginScreenState extends State<LoginScreen> {
           );
 
           if (isPasswordValid) {
-            // Đăng nhập thành công
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text("Đăng nhập thành công!"),
-                backgroundColor: Colors.green,
-                duration: Duration(seconds: 2),
-              ),
-            );
+          // Đăng nhập thành công
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Đăng nhập thành công!"),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
 
             // Kiểm tra role và chuyển hướng
             if (user['Role'] == 'admin') {
@@ -99,16 +99,16 @@ class _LoginScreenState extends State<LoginScreen> {
               );
             } else {
               // Chuyển đến trang home cho user thường
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => HomeScreen()),
-              );
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => HomeScreen()),
+          );
             }
-          } else {
-            // Mật khẩu không đúng
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text("Mật khẩu không chính xác!"),
+        } else {
+          // Mật khẩu không đúng
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Mật khẩu không chính xác!"),
                 backgroundColor: Colors.red,
               ),
             );

@@ -355,7 +355,7 @@ Future<bool> _checkEmailExists(String email) async {
       rePassword: hashedPassword, // Lưu mật khẩu đã mã hóa
       role: 'user',
       phone: phone,
-    );
+      );
     
     try {
       var result = await MongoDatabase.insert(data);

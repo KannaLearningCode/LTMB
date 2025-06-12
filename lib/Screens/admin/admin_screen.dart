@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:kfc_seller/Models/product.dart';
 import 'package:kfc_seller/Screens/admin/product_management_screen.dart';
 import 'package:kfc_seller/Screens/admin/user_management_screen.dart';
+import 'package:kfc_seller/Screens/admin/category_management_screen.dart';
+import 'package:kfc_seller/Screens/admin/order_management_screen.dart';
 import 'package:mongo_dart/mongo_dart.dart' as M;
 import 'package:kfc_seller/DbHelper/mongdb.dart';
 
@@ -61,6 +63,45 @@ class AdminScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildAdminTile(BuildContext context, String title, IconData icon, Widget destination) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => destination),
+          );
+        },
+        child: Container(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 48,
+                color: Color(0xFFB7252A),
+              ),
+              SizedBox(height: 16),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -108,35 +149,35 @@ class AdminScreen extends StatelessWidget {
                 crossAxisSpacing: 20,
                 children: [
                   // Quản lý người dùng
-                  _buildManagementItem(
+                  _buildAdminTile(
                     context,
-                    title: 'Người dùng',
-                    icon: Icons.people,
-                    color: Colors.blue,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => UserManagementScreen(),
-                        ),
-                      );
-                    },
+                    'Quản lý người dùng',
+                    Icons.people,
+                    UserManagementScreen(),
                   ),
                   
                   // Quản lý sản phẩm
-                  _buildManagementItem(
+                  _buildAdminTile(
                     context,
-                    title: 'Sản phẩm',
-                    icon: Icons.fastfood,
-                    color: Color(0xFFB7252A),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ProductManagementScreen(),
-                        ),
-                      );
-                    },
+                    'Quản lý sản phẩm',
+                    Icons.fastfood,
+                    ProductManagementScreen(),
+                  ),
+                  
+                  // Quản lý danh mục
+                  _buildAdminTile(
+                    context,
+                    'Quản lý danh mục',
+                    Icons.category,
+                    CategoryManagementScreen(),
+                  ),
+                  
+                  // Quản lý đơn hàng
+                  _buildAdminTile(
+                    context,
+                    'Quản lý đơn hàng',
+                    Icons.shopping_cart,
+                    OrderManagementScreen(),
                   ),
                 ],
               ),

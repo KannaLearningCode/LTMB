@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:kfc_seller/Models/product.dart';
 import 'package:mongo_dart/mongo_dart.dart' as M;
 import 'package:kfc_seller/DbHelper/mongdb.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:cloudinary_public/cloudinary_public.dart';
 
 class ProductManagementScreen extends StatefulWidget {
   const ProductManagementScreen({Key? key}) : super(key: key);
@@ -18,6 +21,11 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
   final _categoryController = TextEditingController();
   final _imageController = TextEditingController();
 
+  // Thêm biến để lưu file ảnh đã chọn
+  File? _imageFile;
+  // Thêm biến để hiển thị trạng thái đang tải ảnh  
+  bool _isUploading = false;
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -26,6 +34,46 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
     _categoryController.dispose();
     _imageController.dispose();
     super.dispose();
+  }
+
+  Future<String> _uploadImage(File image) async {
+    // Thay các giá trị sau bằng thông tin của bạn
+    final cloudinary = CloudinaryPublic('dwdpxxkgs', 'KFC_Sellers');
+    
+    setState(() {
+      _isUploading = true;
+    });
+
+    try {
+      CloudinaryResponse response = await cloudinary.uploadFile(
+        CloudinaryFile.fromFile(image.path, resourceType: CloudinaryResourceType.Image),
+      );
+      setState(() {
+        _isUploading = false;
+      });
+      return response.secureUrl;
+    } catch (e) {
+      setState(() {
+        _isUploading = false;
+      });
+      print(e.toString());
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Tải ảnh lên thất bại: ${e.toString()}'), backgroundColor: Colors.red),
+      );
+      return '';
+    }
+  }
+
+  // Hàm để chọn ảnh
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      setState(() {
+        _imageFile = File(pickedFile.path);
+      });
+    }
   }
 
   // Hiển thị form thêm/sửa món
@@ -39,9 +87,12 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
       _imageController.text = product.image;
     }
 
+    // Lưu context vào biến local để tránh truy cập sau khi widget bị hủy
+    final currentContext = context;
+
     showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
+      context: currentContext,
+      builder: (dialogContext) => AlertDialog(
         title: Text(product == null ? 'Thêm món mới' : 'Sửa món'),
         content: SingleChildScrollView(
           child: Column(
@@ -61,14 +112,52 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                 decoration: InputDecoration(labelText: 'Giá'),
                 keyboardType: TextInputType.number,
               ),
-              TextField(
-                controller: _categoryController,
-                decoration: InputDecoration(labelText: 'Danh mục'),
+              FutureBuilder<List<Map<String, dynamic>>>(
+                future: MongoDatabase.db.collection('categories').find().toList(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return CircularProgressIndicator();
+                  }
+
+                  if (snapshot.hasError) {
+                    return Text('Lỗi: ${snapshot.error}');
+                  }
+
+                  final categories = snapshot.data ?? [];
+                  
+                  return DropdownButtonFormField<String>(
+                    value: _categoryController.text.isNotEmpty ? _categoryController.text : null,
+                    decoration: InputDecoration(labelText: 'Danh mục'),
+                    items: categories.map<DropdownMenuItem<String>>((category) {
+                      return DropdownMenuItem<String>(
+                        value: category['name'] as String,
+                        child: Text(category['name']),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        _categoryController.text = value;
+                      }
+                    },
+                  );
+                },
               ),
-              TextField(
-                controller: _imageController,
-                decoration: InputDecoration(labelText: 'Link ảnh'),
+              const SizedBox(height: 16),
+
+              // Thêm phần chọn và hiển thị ảnh
+              _imageFile == null
+                  ? (product?.image != null && product!.image.isNotEmpty
+                      ? Image.network(product.image, height: 150)
+                      : Container())
+                  : Image.file(_imageFile!, height: 150),
+              
+              TextButton.icon(
+                onPressed: _pickImage,
+                icon: Icon(Icons.image),
+                label: Text('Chọn ảnh từ thư viện'),
               ),
+
+              if (_isUploading) CircularProgressIndicator(),
             ],
           ),
         ),
@@ -77,12 +166,42 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
             onPressed: () {
               // Clear form và đóng dialog
               _clearForm();
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
             },
             child: Text('Hủy'),
           ),
           TextButton(
             onPressed: () async {
+              // Nếu đang upload thì không cho nhấn
+              if (_isUploading) return;
+
+              // Kiểm tra các trường nhập liệu
+              if (_nameController.text.isEmpty || _priceController.text.isEmpty || _categoryController.text.isEmpty) {
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      SnackBar(content: Text('Vui lòng nhập đủ thông tin bắt buộc.'), backgroundColor: Colors.orange),
+                  );
+                  return;
+              }
+
+              String imageUrl = product?.image ?? '';
+
+              // Nếu có chọn ảnh mới thì mới tải lên
+              if (_imageFile != null) {
+                imageUrl = await _uploadImage(_imageFile!);
+                if (imageUrl.isEmpty) {
+                  // Có lỗi xảy ra khi upload, không tiếp tục
+                  return;
+                }
+              }
+
+              // Nếu không có ảnh mới và cũng không có ảnh cũ thì báo lỗi
+              if (imageUrl.isEmpty) {
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      SnackBar(content: Text('Vui lòng chọn ảnh cho sản phẩm.'), backgroundColor: Colors.orange),
+                  );
+                  return;
+              }
+
               try {
                 final newProduct = Product(
                   id: product?.id ?? M.ObjectId(),
@@ -90,7 +209,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                   description: _descriptionController.text,
                   price: double.parse(_priceController.text),
                   category: _categoryController.text,
-                  image: _imageController.text,
+                  image: imageUrl,
                   isAvailable: true,
                   createdAt: product?.createdAt ?? DateTime.now(),
                   updatedAt: DateTime.now(),
@@ -101,7 +220,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                   await MongoDatabase.db
                       .collection('products')
                       .insert(newProduct.toJson());
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
                     SnackBar(
                       content: Text('Thêm món thành công!'),
                       backgroundColor: Colors.green,
@@ -110,10 +229,10 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                 } else {
                   // Cập nhật
                   await MongoDatabase.db.collection('products').update(
-                    {'_id': product.id},
+                    M.where.id(product.id),
                     newProduct.toJson(),
                   );
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
                     SnackBar(
                       content: Text('Cập nhật món thành công!'),
                       backgroundColor: Colors.green,
@@ -123,12 +242,14 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
 
                 // Clear form và đóng dialog
                 _clearForm();
-                Navigator.pop(context);
+                Navigator.pop(dialogContext);
                 
                 // Refresh danh sách
-                setState(() {});
+                if (mounted) {
+                  setState(() {});
+                }
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
                   SnackBar(
                     content: Text('Lỗi: $e'),
                     backgroundColor: Colors.red,
@@ -148,7 +269,10 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
     _descriptionController.clear();
     _priceController.clear();
     _categoryController.clear();
-    _imageController.clear();
+    _imageController.clear(); // Dù không dùng nhưng cứ clear
+    setState(() {
+      _imageFile = null;
+    });
   }
 
   @override
@@ -280,4 +404,4 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
       ),
     );
   }
-} 
+}

@@ -14,3 +14,7 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+
+cloud name:dwdpxxkgs
+API KEY:376127719616413
+API Secret:t5bo7i-M_fjaE3b1wOR1wCdSsnM
