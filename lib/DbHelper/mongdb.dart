@@ -2,7 +2,7 @@ import 'dart:developer';
 
 import 'package:kfc_seller/Mongdbmodel.dart';
 import 'package:mongo_dart/mongo_dart.dart';
-import 'package:kfc_seller/constaint.dart';
+import 'package:kfc_seller/constants.dart';
 
 class MongoDatabase {
   static var db, userCollection;
