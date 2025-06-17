@@ -35,7 +35,7 @@ class _SplashScreenState extends State<SplashScreen> {
           child: Padding(
             padding: EdgeInsets.all(40),
             child: Image(
-              image: AssetImage('assets/images/logo.png'),
+              image: AssetImage('assets/images/logo1.png'),
               width: 160, // <-- Tăng kích thước hình
               height: 160,
             ),
