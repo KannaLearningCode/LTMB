@@ -28,7 +28,9 @@ class Product {
       id: json['_id'],
       name: json['name'],
       description: json['description'],
-      price: json['price'].toDouble(),
+      price: (json['price'] is int) 
+        ? (json['price'] as int).toDouble()
+        : (json['price'] as num).toDouble(),
       category: json['category'],
       image: json['image'],
       isAvailable: json['isAvailable'],

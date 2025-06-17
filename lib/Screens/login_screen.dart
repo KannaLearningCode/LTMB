@@ -62,63 +62,55 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("Email không tồn tại!"),
-            backgroundColor: Colors.red,
+            backgroundColor: Colors.green,
           ),
         );
         return;
       }
 
       try {
-        // Kiểm tra thông tin đăng nhập
         var userCollection = MongoDatabase.userCollection;
         var user = await userCollection.findOne({"Email": emailController.text});
 
         if (user != null) {
-          // Kiểm tra mật khẩu đã mã hóa
           bool isPasswordValid = PasswordHash.verifyPassword(
             passwordController.text,
             user['Password'],
           );
 
           if (isPasswordValid) {
-          // Đăng nhập thành công
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text("Đăng nhập thành công!"),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
-            ),
-          );
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text("Đăng nhập thành công!"),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 2),
+              ),
+            );
 
-            // Kiểm tra role và chuyển hướng
             if (user['Role'] == 'admin') {
-              // Chuyển đến trang admin
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (context) => AdminScreen()),
               );
             } else {
-              // Chuyển đến trang home cho user thường
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => HomeScreen()),
-          );
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => HomeScreen()),
+              );
             }
-        } else {
-          // Mật khẩu không đúng
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text("Mật khẩu không chính xác!"),
-                backgroundColor: Colors.red,
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text("Mật khẩu không chính xác!"),
+                backgroundColor: Colors.green,
               ),
             );
           }
         } else {
-          // Email không tồn tại
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text("Email không tồn tại!"),
-              backgroundColor: Colors.red,
+              backgroundColor: Colors.green,
             ),
           );
         }
@@ -127,7 +119,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("Có lỗi xảy ra khi đăng nhập!"),
-            backgroundColor: Colors.red,
+            backgroundColor: Colors.green,
           ),
         );
       }
@@ -143,7 +135,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final themeRedColor = Colors.red.shade700;
+    final themeGreenColor = Colors.green.shade700;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -156,17 +148,16 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Text(
-                  "Đăng nhập",
+                  "Đăng Nhập",
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFFD32F2F),
+                    color: Colors.green,
                   ),
                 ),
                 const SizedBox(height: 40),
 
-                // Trường Email
                 TextFormField(
                   controller: emailController,
                   keyboardType: TextInputType.emailAddress,
@@ -185,20 +176,19 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(25.0),
-                      borderSide: BorderSide(color: themeRedColor),
+                      borderSide: BorderSide(color: themeGreenColor),
                     ),
                     contentPadding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 20.0),
                     suffixIcon: _isEmailValidated
                         ? Padding(
                             padding: const EdgeInsets.only(right: 12.0),
-                            child: Icon(Icons.check, color: themeRedColor),
+                            child: Icon(Icons.check, color: themeGreenColor),
                           )
                         : null,
                   ),
                 ),
                 const SizedBox(height: 20),
 
-                // Trường Mật khẩu
                 TextFormField(
                   controller: passwordController,
                   obscureText: _isPasswordObscured,
@@ -206,6 +196,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     if (value == null || value.isEmpty) {
                       return 'Vui lòng nhập mật khẩu';
                     }
+                    return null;
                   },
                   decoration: InputDecoration(
                     labelText: "Mật khẩu",
@@ -215,7 +206,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(25.0),
-                      borderSide: BorderSide(color: themeRedColor),
+                      borderSide: BorderSide(color: themeGreenColor),
                     ),
                     contentPadding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 20.0),
                     suffixIcon: IconButton(
@@ -228,7 +219,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
-                // Liên kết quên mật khẩu
+
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
@@ -241,26 +232,25 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Text(
                       "Quên mật khẩu?",
                       style: TextStyle(
-                        color: themeRedColor,
+                        color: themeGreenColor,
                         fontSize: 14,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 30),
+                const SizedBox(height: 20),
 
-                // Nút Đăng nhập
                 ElevatedButton(
                   onPressed: _loginUser,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: themeRedColor,
+                    backgroundColor: themeGreenColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(25),
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                   child: const Text(
-                    "Đăng nhập",
+                    "Đăng Nhập",
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -268,10 +258,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
-                
-                const SizedBox(height: 20),
-                
-                // Liên kết đến trang đăng ký
+
+                const SizedBox(height: 10),
+
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -287,9 +276,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         );
                       },
                       child: Text(
-                        "Đăng ký",
+                        "Đăng Ký",
                         style: TextStyle(
-                          color: themeRedColor,
+                          color: themeGreenColor,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -297,13 +286,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
 
-                const SizedBox(height: 30),
+                const SizedBox(height: 10),
 
-                // Icons mạng xã hội
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Icon Facebook
                     Container(
                       width: 40,
                       height: 40,
@@ -317,13 +304,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           color: Colors.white,
                           size: 25.0,
                         ),
-                        onPressed: () {
-                          // TODO: Xử lý đăng nhập Facebook
-                        },
+                        onPressed: () {},
                       ),
                     ),
-                    const SizedBox(width: 24),
-                    // Icon Google
+                    const SizedBox(width: 14),
                     Container(
                       width: 40,
                       height: 40,
@@ -341,14 +325,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         ],
                       ),
                       child: IconButton(
-                        icon: Image.network( // Sử dụng URL của Google icon
-                            'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/768px-Google_%22G%22_logo.svg.png',
-                            width: 22, // Kích thước icon bên trong
-                            height: 22,
-                         ),
-                        onPressed: () {
-                          // TODO: Xử lý đăng nhập Google
-                        },
+                        icon: Image.network(
+                          'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/768px-Google_%22G%22_logo.svg.png',
+                          width: 22,
+                          height: 22,
+                        ),
+                        onPressed: () {},
                       ),
                     ),
                   ],

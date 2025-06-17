@@ -76,11 +76,11 @@ class _MongoDbInsertState extends State<MongoDbInsert> {
             children: [
               const SizedBox(height: 50),
               Text(
-                "Đăng ký",
+                "Đăng Ký",
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFFB7252A),
+                  color: Colors.green,
                 ),
               ),
               const SizedBox(height: 40),
@@ -95,7 +95,7 @@ class _MongoDbInsertState extends State<MongoDbInsert> {
                     borderRadius: BorderRadius.circular(10),
                     borderSide: BorderSide(
                       color: nameController.text.isNotEmpty && !_isNameValid 
-                          ? Colors.red 
+                          ? Colors.green 
                           : Colors.grey
                     ),
                   ),
@@ -103,13 +103,13 @@ class _MongoDbInsertState extends State<MongoDbInsert> {
                     borderRadius: BorderRadius.circular(10),
                     borderSide: BorderSide(
                       color: nameController.text.isNotEmpty && !_isNameValid 
-                          ? Colors.red 
+                          ? Colors.green 
                           : Color(0xFFB7252A)
                     ),
                   ),
                   labelStyle: TextStyle(
                     color: nameController.text.isNotEmpty && !_isNameValid 
-                        ? Colors.red 
+                        ? Colors.green 
                         : null
                   ),
                 ),
@@ -126,7 +126,7 @@ class _MongoDbInsertState extends State<MongoDbInsert> {
                     borderRadius: BorderRadius.circular(10),
                     borderSide: BorderSide(
                       color: emailController.text.isNotEmpty && !_isEmailValid 
-                          ? Colors.red 
+                          ? Colors.green 
                           : Colors.grey
                     ),
                   ),
@@ -134,13 +134,13 @@ class _MongoDbInsertState extends State<MongoDbInsert> {
                     borderRadius: BorderRadius.circular(10),
                     borderSide: BorderSide(
                       color: emailController.text.isNotEmpty && !_isEmailValid 
-                          ? Colors.red 
+                          ? Colors.green 
                           : Color(0xFFB7252A)
                     ),
                   ),
                   labelStyle: TextStyle(
                     color: emailController.text.isNotEmpty && !_isEmailValid 
-                        ? Colors.red 
+                        ? Colors.green 
                         : null
                   ),
                 ),
@@ -158,7 +158,7 @@ class _MongoDbInsertState extends State<MongoDbInsert> {
                     borderRadius: BorderRadius.circular(10),
                     borderSide: BorderSide(
                       color: phoneController.text.isNotEmpty && !_isPhoneValid 
-                          ? Colors.red 
+                          ? Colors.green 
                           : Colors.grey
                     ),
                   ),
@@ -166,13 +166,13 @@ class _MongoDbInsertState extends State<MongoDbInsert> {
                     borderRadius: BorderRadius.circular(10),
                     borderSide: BorderSide(
                       color: phoneController.text.isNotEmpty && !_isPhoneValid 
-                          ? Colors.red 
+                          ? Colors.green 
                           : Color(0xFFB7252A)
                     ),
                   ),
                   labelStyle: TextStyle(
                     color: phoneController.text.isNotEmpty && !_isPhoneValid 
-                        ? Colors.red 
+                        ? Colors.green 
                         : null
                   ),
                 ),
@@ -192,7 +192,7 @@ class _MongoDbInsertState extends State<MongoDbInsert> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: Color(0xFFB7252A)),
+                    borderSide: BorderSide(color: Colors.green),
                   ),
                   suffixIcon: IconButton(
                     icon: Icon(
@@ -222,7 +222,7 @@ class _MongoDbInsertState extends State<MongoDbInsert> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: Color(0xFFB7252A)),
+                    borderSide: BorderSide(color: Colors.green),
                   ),
                   suffixIcon: IconButton(
                     icon: Icon(
@@ -264,16 +264,17 @@ class _MongoDbInsertState extends State<MongoDbInsert> {
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFFB7252A),
+                    backgroundColor: Colors.green,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
                   child: Text(
-                    "Đăng ký",
+                    "Đăng Ký",
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -291,9 +292,9 @@ class _MongoDbInsertState extends State<MongoDbInsert> {
                       );
                     },
                     child: Text(
-                      "Đăng nhập",
+                      "Đăng Nhập",
                       style: TextStyle(
-                        color: Color(0xFFB7252A),
+                        color: Colors.green,
                         fontWeight: FontWeight.bold,
                       ),
                     ),

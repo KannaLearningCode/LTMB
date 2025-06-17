@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:kfc_seller/Screens/login_screen.dart';
 import 'home_tab.dart';
-import 'menu_tab.dart';
+import 'Menu/menu_tab.dart';
 import 'cart_tab.dart';
 import 'more_tab.dart';
 import 'profile_screen.dart';
@@ -110,15 +111,50 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'KFC',
+                'Ckicky',
                 style: TextStyle(
                   color: Color(0xFFB7252A),
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              GestureDetector(
-                onTap: _navigateToProfile,
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  if (value == 'profile') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => ProfileScreen()),
+                    );
+                  } else if (value == 'logout') {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (context) => LoginScreen()),
+                      (route) => false, // Xóa toàn bộ các route trước đó
+                    );
+                  }
+                },
+                itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                  PopupMenuItem<String>(
+                    value: 'profile',
+                    child: Row(
+                      children: [
+                        Icon(Icons.person, color: Color(0xFFB7252A)),
+                        SizedBox(width: 10),
+                        Text('Trang cá nhân'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'logout',
+                    child: Row(
+                      children: [
+                        Icon(Icons.logout, color: Colors.grey),
+                        SizedBox(width: 10),
+                        Text('Đăng xuất'),
+                      ],
+                    ),
+                  ),
+                ],
                 child: Container(
                   width: 40,
                   height: 40,
@@ -149,7 +185,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
-        backgroundColor: Color(0xFFB7252A),
+        backgroundColor: Colors.green,
         body: NestedScrollView(
           controller: _scrollController,
           headerSliverBuilder: (context, innerBoxIsScrolled) {
@@ -169,7 +205,7 @@ class _HomeScreenState extends State<HomeScreen> {
           },
           body: Container(
             decoration: BoxDecoration(
-              color: Color(0xFFB7252A),
+              color: Colors.green,
             ),
             child: _pages[_selectedIndex],
           ),
@@ -203,10 +239,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 label: 'Thêm',
               ),
             ],
-            backgroundColor: Colors.white,
+            backgroundColor: Colors.green,
             currentIndex: _selectedIndex,
-            selectedItemColor: Color(0xFFB7252A),
-            unselectedItemColor: Colors.grey,
+            selectedItemColor: Colors.yellowAccent,
+            unselectedItemColor: Colors.white,
             onTap: _onItemTapped,
             type: BottomNavigationBarType.fixed,
           ),

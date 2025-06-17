@@ -6,6 +6,7 @@ import 'package:kfc_seller/Screens/admin/category_management_screen.dart';
 import 'package:kfc_seller/Screens/admin/order_management_screen.dart';
 import 'package:mongo_dart/mongo_dart.dart' as M;
 import 'package:kfc_seller/DbHelper/mongdb.dart';
+import 'package:kfc_seller/Screens/login_screen.dart';
 
 class AdminScreen extends StatelessWidget {
   const AdminScreen({Key? key}) : super(key: key);
@@ -106,9 +107,29 @@ class AdminScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Quản lý KFC'),
+        title: Text(
+          'Quản lý KFC',
+          style: TextStyle(color: Colors.white), // Đổi màu chữ ở đây
+        ),
         backgroundColor: Color(0xFFB7252A),
         automaticallyImplyLeading: false,
+        actions: [
+    IconButton(
+      icon: Icon(
+        Icons.logout,
+        color: Colors.white,  
+      ),
+      onPressed: () {
+        // Thực hiện đăng xuất, sau đó điều hướng về trang đăng nhập
+        Navigator.pushAndRemoveUntil(
+          context,
+
+          MaterialPageRoute(builder: (context) => LoginScreen()),
+          (route) => false,
+        );
+      },
+    ),
+  ],
       ),
       body: Container(
         padding: EdgeInsets.all(16),
