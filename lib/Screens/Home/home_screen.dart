@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:kfc_seller/Screens/login_screen.dart';
-import 'home_tab.dart';
-import 'Menu/menu_tab.dart';
-import 'cart_tab.dart';
-import 'more_tab.dart';
+import 'package:kfc_seller/Screens/Home/login_screen.dart';
+import '../../Tabs/home_tab.dart';
+import '../Menu/menu_tab.dart';
+import '../../Tabs/cart_tab.dart';
+import '../../Tabs/more_tab.dart';
 import 'profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {

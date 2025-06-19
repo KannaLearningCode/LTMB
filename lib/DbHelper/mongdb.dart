@@ -1,6 +1,6 @@
 import 'dart:developer';
 
-import 'package:kfc_seller/Mongdbmodel.dart';
+import 'package:kfc_seller/Models/Mongdbmodel.dart';
 import 'package:mongo_dart/mongo_dart.dart';
 import 'package:kfc_seller/constants.dart';
 

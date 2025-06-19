@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:kfc_seller/DbHelper/mongdb.dart';
-import 'package:kfc_seller/Screens/Register.dart';
+import 'package:kfc_seller/Screens/Home/Register_screen.dart';
 import 'package:kfc_seller/Screens/admin/admin_screen.dart';
-import 'package:kfc_seller/Screens/splash_screen.dart';
+import 'package:kfc_seller/Screens/Home/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

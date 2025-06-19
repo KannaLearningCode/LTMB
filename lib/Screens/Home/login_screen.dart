@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:kfc_seller/Screens/Register.dart';
-import 'package:kfc_seller/Screens/forgot_password_screen.dart';
-import 'package:kfc_seller/Screens/home_screen.dart';
+import 'package:kfc_seller/Screens/Home/Register_screen.dart';
+import 'package:kfc_seller/Screens/Home/forgot_password_screen.dart';
+import 'package:kfc_seller/Screens/Home/home_screen.dart';
 import 'package:kfc_seller/Screens/admin/admin_screen.dart';
 import 'package:kfc_seller/DbHelper/mongdb.dart';
 import 'package:kfc_seller/utils/password_hash.dart';

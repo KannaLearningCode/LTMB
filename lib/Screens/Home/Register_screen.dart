@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:kfc_seller/DbHelper/mongdb.dart'; //
-import 'package:kfc_seller/Mongdbmodel.dart'; //
+import 'package:kfc_seller/Models/Mongdbmodel.dart'; //
 
 import 'package:mongo_dart/mongo_dart.dart' as M;
-import 'package:kfc_seller/Screens/login_screen.dart'; // Thêm import login screen
+import 'package:kfc_seller/Screens/Home/login_screen.dart'; // Thêm import login screen
 import 'package:kfc_seller/utils/password_hash.dart'; // Thêm import
 
 class MongoDbInsert extends StatefulWidget {

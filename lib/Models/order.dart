@@ -1,6 +1,8 @@
 import 'package:mongo_dart/mongo_dart.dart';
 
 class OrderItem {
+  final int id;
+  final ObjectId orderId;
   final ObjectId productId;
   final int quantity;
   final double price;
@@ -8,6 +10,8 @@ class OrderItem {
   final String productImage;
 
   OrderItem({
+    required this.id,
+    required this.orderId,
     required this.productId,
     required this.quantity,
     required this.price,
@@ -17,16 +21,22 @@ class OrderItem {
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
     return OrderItem(
+      id: json['id'],
+      orderId: json['orderId'],
       productId: json['productId'],
       quantity: json['quantity'],
-      price: json['price'].toDouble(),
-      productName: json['productName'],
-      productImage: json['productImage'],
+      price: (json['price'] is int)
+          ? (json['price'] as int).toDouble()
+          : (json['price'] as num).toDouble(),
+      productName: json['productName'] ?? '',
+      productImage: json['productImage'] ?? '',
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
+      'orderId': orderId,
       'productId': productId,
       'quantity': quantity,
       'price': price,
@@ -40,11 +50,16 @@ class Order {
   final ObjectId id;
   final ObjectId userId;
   final List<OrderItem> items;
-  final String status;
   final double totalAmount;
+  final String status;
   final String paymentMethod;
-  final String address;
+  final String paymentStatus;
+  final String shippingAddress;
+  final String billingAddress;
+  final ObjectId? couponId;
+  final ObjectId? shippingMethodId;
   final String phone;
+  final String? notes;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -52,11 +67,16 @@ class Order {
     required this.id,
     required this.userId,
     required this.items,
-    required this.status,
     required this.totalAmount,
+    this.status = 'pending',
     required this.paymentMethod,
-    required this.address,
+    this.paymentStatus = 'unpaid',
+    required this.shippingAddress,
+    required this.billingAddress,
+    this.couponId,
+    this.shippingMethodId,
     required this.phone,
+    this.notes,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -68,11 +88,16 @@ class Order {
       items: (json['items'] as List)
           .map((item) => OrderItem.fromJson(item))
           .toList(),
-      status: json['status'],
-      totalAmount: json['totalAmount'].toDouble(),
-      paymentMethod: json['paymentMethod'],
-      address: json['address'],
-      phone: json['phone'],
+      totalAmount: (json['totalAmount'] as num).toDouble(),
+      status: json['status'] ?? 'pending',
+      paymentMethod: json['paymentMethod'] ?? '',
+      paymentStatus: json['paymentStatus'] ?? 'unpaid',
+      shippingAddress: json['shippingAddress'] ?? '',
+      billingAddress: json['billingAddress'] ?? '',
+      couponId: json['couponId'],
+      shippingMethodId: json['shippingMethodId'],
+      phone: json['phone'] ?? '',
+      notes: json['notes'],
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
     );
@@ -83,13 +108,18 @@ class Order {
       '_id': id,
       'userId': userId,
       'items': items.map((item) => item.toJson()).toList(),
-      'status': status,
       'totalAmount': totalAmount,
+      'status': status,
       'paymentMethod': paymentMethod,
-      'address': address,
+      'paymentStatus': paymentStatus,
+      'shippingAddress': shippingAddress,
+      'billingAddress': billingAddress,
+      'couponId': couponId,
+      'shippingMethodId': shippingMethodId,
       'phone': phone,
+      'notes': notes,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
   }
-} 
+}

@@ -1,7 +1,7 @@
   import 'package:flutter/material.dart';
   import 'package:kfc_seller/Models/product.dart';
   import 'package:kfc_seller/DbHelper/mongdb.dart';
-import 'package:kfc_seller/Screens/detail_product.dart';
+import 'package:kfc_seller/Screens/Home/detail_product_screen.dart';
   import 'package:mongo_dart/mongo_dart.dart' as M;
   import 'package:intl/intl.dart';
 

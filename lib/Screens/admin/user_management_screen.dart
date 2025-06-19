@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kfc_seller/DbHelper/mongdb.dart';
-import 'package:kfc_seller/Mongdbmodel.dart';
+import 'package:kfc_seller/Models/Mongdbmodel.dart';
 
 class UserManagementScreen extends StatefulWidget {
   const UserManagementScreen({Key? key}) : super(key: key);

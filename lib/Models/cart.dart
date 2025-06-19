@@ -6,6 +6,8 @@ class CartItem {
   final double price;
   final String productName;
   final String productImage;
+  final DateTime addedAt;
+  final DateTime updatedAt;
 
   CartItem({
     required this.productId,
@@ -13,6 +15,8 @@ class CartItem {
     required this.price,
     required this.productName,
     required this.productImage,
+    required this.addedAt,
+    required this.updatedAt,
   });
 
   factory CartItem.fromJson(Map<String, dynamic> json) {
@@ -22,6 +26,12 @@ class CartItem {
       price: json['price'].toDouble(),
       productName: json['productName'],
       productImage: json['productImage'],
+      addedAt: json["CreatedAt"] != null
+            ? DateTime.parse(json["CreatedAt"])
+            : DateTime.now(),
+        updatedAt: json["UpdatedAt"] != null
+            ? DateTime.parse(json["UpdatedAt"])
+            : DateTime.now(),
     );
   }
 
@@ -32,6 +42,8 @@ class CartItem {
       'price': price,
       'productName': productName,
       'productImage': productImage,
+      "addedAt": addedAt.toIso8601String(),
+        "UpdatedAt": updatedAt.toIso8601String(),
     };
   }
 }

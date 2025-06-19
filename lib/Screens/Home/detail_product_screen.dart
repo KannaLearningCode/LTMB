@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kfc_seller/Models/product.dart';
-import 'package:kfc_seller/Screens/home_screen.dart';
+import 'package:kfc_seller/Screens/Home/home_screen.dart';
 
 class DetailProductPage extends StatefulWidget {
   final Product product;
