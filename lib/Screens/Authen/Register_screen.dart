@@ -3,7 +3,7 @@ import 'package:kfc_seller/DbHelper/mongdb.dart'; //
 import 'package:kfc_seller/Models/Mongdbmodel.dart'; //
 
 import 'package:mongo_dart/mongo_dart.dart' as M;
-import 'package:kfc_seller/Screens/Home/login_screen.dart'; // Thêm import login screen
+import 'package:kfc_seller/Screens/Authen/login_screen.dart'; // Thêm import login screen
 import 'package:kfc_seller/utils/password_hash.dart'; // Thêm import
 
 class MongoDbInsert extends StatefulWidget {
@@ -19,6 +19,9 @@ class _MongoDbInsertState extends State<MongoDbInsert> {
   var passwordController = TextEditingController();
   var repasswordController = TextEditingController();
   var phoneController = TextEditingController(); // Thêm controller cho số điện thoại
+  var addressController = TextEditingController();
+  DateTime? selectedBirthday;
+
   bool _obscurePassword = true;
   bool _obscureRePassword = true;
   
@@ -179,6 +182,62 @@ class _MongoDbInsertState extends State<MongoDbInsert> {
               ),
               const SizedBox(height: 20),
               TextField(
+                controller: addressController,
+                decoration: InputDecoration(
+                  labelText: "Địa chỉ",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: Colors.grey),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: Colors.green),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              GestureDetector(
+                onTap: () async {
+                  DateTime? pickedDate = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime(2000),
+                    firstDate: DateTime(1900),
+                    lastDate: DateTime.now(),
+                  );
+                  if (pickedDate != null) {
+                    setState(() {
+                      selectedBirthday = pickedDate;
+                    });
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 18),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        selectedBirthday != null
+                            ? "${selectedBirthday!.day}/${selectedBirthday!.month}/${selectedBirthday!.year}"
+                            : "Chọn ngày sinh",
+                        style: TextStyle(
+                          color: selectedBirthday != null ? Colors.black : Colors.grey,
+                          fontSize: 16,
+                        ),
+                      ),
+                      Icon(Icons.calendar_today, color: Colors.grey),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              TextField(
                 controller: passwordController,
                 obscureText: _obscurePassword,
                 decoration: InputDecoration(
@@ -249,19 +308,47 @@ class _MongoDbInsertState extends State<MongoDbInsert> {
                       );
                       return;
                     }
-                    if (passwordController.text == repasswordController.text) {
-                      insertData(
-                        nameController.text,
-                        emailController.text,
-                        passwordController.text,
-                        repasswordController.text,
-                        phoneController.text,
+                    if (!_isPhoneValid) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text("Số điện thoại không hợp lệ (10 số)")),
+                        );
+                        return;
+                    }
+                    if (addressController.text.trim().isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("Vui lòng nhập địa chỉ")),
                       );
-                    } else {
+                      return;
+                    }
+
+                    if (selectedBirthday == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("Vui lòng chọn ngày sinh")),
+                      );
+                      return;
+                    }
+
+                    if (passwordController.text.length < 6) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("Mật khẩu phải có ít nhất 6 ký tự")),
+                      );
+                      return;
+                    }
+
+                    if (passwordController.text != repasswordController.text) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text("Mật khẩu không khớp!")),
                       );
+                      return;
                     }
+
+                    insertData(
+                      nameController.text,
+                      emailController.text,
+                      passwordController.text,
+                      repasswordController.text,
+                      phoneController.text,
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
@@ -356,6 +443,8 @@ Future<bool> _checkEmailExists(String email) async {
       rePassword: hashedPassword, // Lưu mật khẩu đã mã hóa
       role: 'user',
       phone: phone,
+      address: addressController.text.trim(),
+      birthday: selectedBirthday,
       );
     
     try {
@@ -400,6 +489,8 @@ Future<bool> _checkEmailExists(String email) async {
     passwordController.clear();
     repasswordController.clear();
     phoneController.clear(); // Clear số điện thoại
+    addressController.clear();
+    selectedBirthday = null;
   }
 
   @override
@@ -409,6 +500,7 @@ Future<bool> _checkEmailExists(String email) async {
     passwordController.dispose();
     repasswordController.dispose();
     phoneController.dispose(); // Dispose controller số điện thoại
+    addressController.dispose();
     super.dispose();
   }
 }

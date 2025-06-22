@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:kfc_seller/Screens/Home/Register_screen.dart';
-import 'package:kfc_seller/Screens/Home/forgot_password_screen.dart';
+import 'package:kfc_seller/Screens/Authen/Register_screen.dart';
+import 'package:kfc_seller/Screens/Authen/forgot_password_screen.dart';
 import 'package:kfc_seller/Screens/Home/home_screen.dart';
 import 'package:kfc_seller/Screens/admin/admin_screen.dart';
 import 'package:kfc_seller/DbHelper/mongdb.dart';
 import 'package:kfc_seller/utils/password_hash.dart';
+import 'package:mongo_dart/mongo_dart.dart' as mongo;
+import 'package:kfc_seller/Models/Mongdbmodel.dart'; // Thêm dòng này
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+
+  const LoginScreen({Key? key,}) : super(key: key);
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -93,9 +96,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 MaterialPageRoute(builder: (context) => AdminScreen()),
               );
             } else {
+              final model = Mongodbmodel.fromJson(user);
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => HomeScreen()),
+                MaterialPageRoute(builder: (context) => HomeScreen(userId: mongo.ObjectId.fromHexString(user['_id']),user: model)),
               );
             }
           } else {

@@ -6,6 +6,7 @@ class CartItem {
   final double price;
   final String productName;
   final String productImage;
+  final String description; 
   final DateTime addedAt;
   final DateTime updatedAt;
 
@@ -15,6 +16,7 @@ class CartItem {
     required this.price,
     required this.productName,
     required this.productImage,
+    required this.description,
     required this.addedAt,
     required this.updatedAt,
   });
@@ -26,12 +28,13 @@ class CartItem {
       price: json['price'].toDouble(),
       productName: json['productName'],
       productImage: json['productImage'],
-      addedAt: json["CreatedAt"] != null
-            ? DateTime.parse(json["CreatedAt"])
-            : DateTime.now(),
-        updatedAt: json["UpdatedAt"] != null
-            ? DateTime.parse(json["UpdatedAt"])
-            : DateTime.now(),
+      description: json['description'] is String ? json['description'] : '',
+      addedAt: json["addedAt"] != null
+        ? DateTime.parse(json["addedAt"])
+        : DateTime.now(),
+      updatedAt: json["updatedAt"] != null
+        ? DateTime.parse(json["updatedAt"])
+        : DateTime.now(),
     );
   }
 
@@ -42,8 +45,9 @@ class CartItem {
       'price': price,
       'productName': productName,
       'productImage': productImage,
+      'description': description,
       "addedAt": addedAt.toIso8601String(),
-        "UpdatedAt": updatedAt.toIso8601String(),
+      "updatedAt": updatedAt.toIso8601String(),
     };
   }
 }
@@ -70,10 +74,14 @@ class Cart {
       items: (json['items'] as List)
           .map((item) => CartItem.fromJson(item))
           .toList(),
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
-    );
-  }
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : DateTime.now(),
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'])
+          : DateTime.now(),
+      );
+    }
 
   Map<String, dynamic> toJson() {
     return {

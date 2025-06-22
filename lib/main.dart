@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:kfc_seller/DbHelper/mongdb.dart';
-import 'package:kfc_seller/Screens/Home/Register_screen.dart';
-import 'package:kfc_seller/Screens/admin/admin_screen.dart';
+import 'package:kfc_seller/Screens/Cart/cart_provider.dart';
 import 'package:kfc_seller/Screens/Home/splash_screen.dart';
+import 'package:kfc_seller/Screens/admin/admin_screen.dart';
+import 'package:provider/provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -11,7 +12,14 @@ void main() async {
   }).catchError((error) {
     print("Error connecting to MongoDB: $error");
   });
-  runApp(const MyApp());
+  runApp(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => CartProvider()), // 👈 thêm dòng này
+        ],
+        child: const MyApp(),
+      ),
+    );
 }
 
 class MyApp extends StatelessWidget {

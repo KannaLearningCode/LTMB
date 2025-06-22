@@ -1,12 +1,15 @@
   import 'package:flutter/material.dart';
   import 'package:kfc_seller/Models/product.dart';
   import 'package:kfc_seller/DbHelper/mongdb.dart';
-import 'package:kfc_seller/Screens/Home/detail_product_screen.dart';
-  import 'package:mongo_dart/mongo_dart.dart' as M;
+  import 'package:kfc_seller/Screens/Menu/detail_product_screen.dart';
+  import 'package:mongo_dart/mongo_dart.dart' as mongo;
   import 'package:intl/intl.dart';
+  import 'package:kfc_seller/Models/Mongdbmodel.dart';
 
   class MenuTab extends StatefulWidget {
-    const MenuTab({Key? key}) : super(key: key);
+    final mongo.ObjectId userId;
+    final Mongodbmodel user;
+    const MenuTab({Key? key, required this.userId, required this.user}) : super(key: key);
 
     @override
     State<MenuTab> createState() => _MenuTabState();
@@ -113,7 +116,7 @@ import 'package:kfc_seller/Screens/Home/detail_product_screen.dart';
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => DetailProductPage(product: product),
+                                builder: (context) => DetailProductPage(product: product, userId: widget.userId, user: widget.user,),
                               ),
                             );
                           },

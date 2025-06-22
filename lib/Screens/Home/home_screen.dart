@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:kfc_seller/Screens/Home/login_screen.dart';
-import '../../Tabs/home_tab.dart';
+import 'package:kfc_seller/Screens/Authen/login_screen.dart';
+import '../Tabs/home_tab.dart';
 import '../Menu/menu_tab.dart';
-import '../../Tabs/cart_tab.dart';
-import '../../Tabs/more_tab.dart';
+import '../Tabs/cart_tab.dart';
+import '../Tabs/more_tab.dart';
 import 'profile_screen.dart';
+import 'package:mongo_dart/mongo_dart.dart' as mongo;
+import 'package:kfc_seller/Models/Mongdbmodel.dart'; // Thêm dòng này
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  final int index;
+  final mongo.ObjectId userId;
+  final Mongodbmodel user;
+  const HomeScreen({
+    Key? key,
+    this.index = 0,
+    required this.userId, required this.user,
+  }) : super(key: key);
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -20,67 +28,60 @@ class _HomeScreenState extends State<HomeScreen> {
   final ScrollController _scrollController = ScrollController();
 
   @override
+  void initState() {
+    super.initState();
+    _selectedIndex = widget.index;
+  }
+
+  @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
   }
 
-  // Danh sách các widget tương ứng với từng tab
-  static const List<Widget> _pages = <Widget>[
-    HomeTab(),
-    MenuTab(),
-    CartTab(),
-    MoreTab(),
-  ];
-
+  // Hàm đổi tab (gọi từ CartTab khi người dùng muốn "Mua hàng ngay")
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
   }
 
-  void _navigateToProfile() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ProfileScreen(),
-      ),
-    );
-  }
+  // Tạo danh sách tab (gọi trong build để có thể truyền callback)
+  List<Widget> get _pages => [
+        const HomeTab(),
+        MenuTab(userId: widget.userId,user: widget.user,),
+        CartTab(
+          user: widget.user,
+          userId: widget.userId,
+          onGoToMenuTab: () => _onItemTapped(1), // 👈 index của Menu tab
+        ),
+        const MoreTab(),
+      ];
 
   Future<bool> _onWillPop() async {
-    if (currentBackPressTime == null || 
-        DateTime.now().difference(currentBackPressTime!) > Duration(seconds: 2)) {
-      // Lần nhấn back đầu tiên hoặc đã quá 2 giây từ lần nhấn trước
+    if (currentBackPressTime == null ||
+        DateTime.now().difference(currentBackPressTime!) > const Duration(seconds: 2)) {
       currentBackPressTime = DateTime.now();
-      
-      // Hiển thị dialog xác nhận
-      bool? shouldPop = await showDialog<bool>(
+
+      final shouldPop = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: Text('Thoát ứng dụng'),
-          content: Text('Bạn có muốn thoát ứng dụng không?'),
+          title: const Text('Thoát ứng dụng'),
+          content: const Text('Bạn có muốn thoát ứng dụng không?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: Text(
-                'Không',
-                style: TextStyle(color: Colors.grey),
-              ),
+              child: const Text('Không', style: TextStyle(color: Colors.grey)),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: Text(
-                'Có',
-                style: TextStyle(color: Color(0xFFB7252A)),
-              ),
+              child: const Text('Có', style: TextStyle(color: Color(0xFFB7252A))),
             ),
           ],
         ),
       );
       return shouldPop ?? false;
     }
-    // Nhấn back lần thứ 2 trong vòng 2 giây
     return true;
   }
 
@@ -91,8 +92,8 @@ class _HomeScreenState extends State<HomeScreen> {
         bottom: 15,
       ),
       child: Container(
-        margin: EdgeInsets.symmetric(horizontal:0),
         height: 60,
+        margin: const EdgeInsets.symmetric(horizontal: 0),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(15),
@@ -101,7 +102,7 @@ class _HomeScreenState extends State<HomeScreen> {
               color: Colors.grey.withOpacity(0.2),
               spreadRadius: 2,
               blurRadius: 4,
-              offset: Offset(0, 2),
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -110,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              const Text(
                 'Ckicky',
                 style: TextStyle(
                   color: Color(0xFFB7252A),
@@ -128,13 +129,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   } else if (value == 'logout') {
                     Navigator.pushAndRemoveUntil(
                       context,
-                      MaterialPageRoute(builder: (context) => LoginScreen()),
-                      (route) => false, // Xóa toàn bộ các route trước đó
+                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+                      (route) => false,
                     );
                   }
                 },
-                itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                  PopupMenuItem<String>(
+                itemBuilder: (BuildContext context) => [
+                  const PopupMenuItem<String>(
                     value: 'profile',
                     child: Row(
                       children: [
@@ -144,7 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                   ),
-                  PopupMenuItem<String>(
+                  const PopupMenuItem<String>(
                     value: 'logout',
                     child: Row(
                       children: [
@@ -162,15 +163,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     shape: BoxShape.circle,
                     color: Colors.grey[200],
                     border: Border.all(
-                      color: Color(0xFFB7252A),
+                      color: const Color(0xFFB7252A),
                       width: 2,
                     ),
                   ),
-                  child: Icon(
-                    Icons.person,
-                    color: Color(0xFFB7252A),
-                    size: 24,
-                  ),
+                  child: const Icon(Icons.person, color: Color(0xFFB7252A), size: 24),
                 ),
               ),
             ],
@@ -188,25 +185,21 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Colors.green,
         body: NestedScrollView(
           controller: _scrollController,
-          headerSliverBuilder: (context, innerBoxIsScrolled) {
-            return [
-              SliverAppBar(
-                expandedHeight: 110.0,
-                floating: true,
-                pinned: true,
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                automaticallyImplyLeading: false,
-                flexibleSpace: FlexibleSpaceBar(
-                  background: _buildHeader(),
-                ),
+          headerSliverBuilder: (context, innerBoxIsScrolled) => [
+            SliverAppBar(
+              expandedHeight: 110.0,
+              floating: true,
+              pinned: true,
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              automaticallyImplyLeading: false,
+              flexibleSpace: FlexibleSpaceBar(
+                background: _buildHeader(),
               ),
-            ];
-          },
-          body: Container(
-            decoration: BoxDecoration(
-              color: Colors.green,
             ),
+          ],
+          body: Container(
+            decoration: const BoxDecoration(color: Colors.green),
             child: _pages[_selectedIndex],
           ),
         ),
@@ -216,28 +209,16 @@ class _HomeScreenState extends State<HomeScreen> {
               BoxShadow(
                 color: Colors.black.withOpacity(0.1),
                 blurRadius: 10,
-                offset: Offset(0, -5),
+                offset: const Offset(0, -5),
               ),
             ],
           ),
           child: BottomNavigationBar(
-            items: const <BottomNavigationBarItem>[
-              BottomNavigationBarItem(
-                icon: Icon(Icons.home),
-                label: 'Trang chủ',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.restaurant_menu),
-                label: 'Thực đơn',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.shopping_cart),
-                label: 'Giỏ hàng',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.more_horiz),
-                label: 'Thêm',
-              ),
+            items: const [
+              BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Trang chủ'),
+              BottomNavigationBarItem(icon: Icon(Icons.restaurant_menu), label: 'Thực đơn'),
+              BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: 'Giỏ hàng'),
+              BottomNavigationBarItem(icon: Icon(Icons.more_horiz), label: 'Thêm'),
             ],
             backgroundColor: Colors.green,
             currentIndex: _selectedIndex,
@@ -250,4 +231,4 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-} 
+}

@@ -49,7 +49,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     ),
                   ),
                   title: Text(
-                    user['Name'] ?? 'Không có tên',
+                    user['Username'] ?? 'Không có tên',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                     ),

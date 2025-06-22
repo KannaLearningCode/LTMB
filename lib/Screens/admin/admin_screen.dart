@@ -6,7 +6,7 @@ import 'package:kfc_seller/Screens/admin/category_management_screen.dart';
 import 'package:kfc_seller/Screens/admin/order_management_screen.dart';
 import 'package:mongo_dart/mongo_dart.dart' as M;
 import 'package:kfc_seller/DbHelper/mongdb.dart';
-import 'package:kfc_seller/Screens/Home/login_screen.dart';
+import 'package:kfc_seller/Screens/Authen/login_screen.dart';
 
 class AdminScreen extends StatelessWidget {
   const AdminScreen({Key? key}) : super(key: key);
