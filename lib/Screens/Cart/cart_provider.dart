@@ -109,6 +109,21 @@ Future<void> decreaseQuantity(ObjectId productId) async {
     }
     notifyListeners();
   }
+  Future<void> clearCartFromDb() async {
+    final db = await Db.create(MONGO_CONN_URL);
+    await db.open();
+
+    final collection = db.collection('carts');
+    await collection.deleteOne(where.eq('userId', _userId)); // Xoá giỏ hàng theo user
+
+    await db.close();
+  }
+
+  Future<void> clearCart() async {
+    _items.clear();
+    notifyListeners();
+    await clearCartFromDb(); // ✅ Gọi xoá DB
+  }
 
   double get totalPrice =>
       _items.fold(0, (sum, item) => sum + item.price * item.quantity);

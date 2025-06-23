@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:kfc_seller/Models/order.dart';
 import 'package:kfc_seller/Screens/Cart/cart_provider.dart';
+import 'package:kfc_seller/Screens/Home/home_screen.dart';
+import 'package:kfc_seller/Screens/Order/order_service.dart';
+import 'package:kfc_seller/Screens/Order/order_success_page.dart';
+import 'package:kfc_seller/Screens/Payment/paypal_checkout_page.dart';
 import 'package:provider/provider.dart';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
 import 'package:kfc_seller/Models/Mongdbmodel.dart'; // Thêm dòng này
 
 class ConfirmOrderScreen extends StatefulWidget {
   final Mongodbmodel user;
+  final mongo.ObjectId userId;
 
-  const ConfirmOrderScreen({super.key, required this.user});
+  const ConfirmOrderScreen({super.key, required this.user, required this.userId});
 
   @override
   State<ConfirmOrderScreen> createState() => _ConfirmOrderScreenState();
@@ -81,6 +87,7 @@ void _showShippingInfoBottomSheet(BuildContext context) {
                 });
 
                 Navigator.pop(context);
+
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Đã lưu thông tin người nhận')),
                 );
@@ -309,22 +316,127 @@ void _showShippingInfoBottomSheet(BuildContext context) {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  // TODO: Gửi đơn hàng
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Đơn hàng đã được xác nhận!')),
-                  );
-                },
+                onPressed: () async {
+  final now = DateTime.now();
+  final mongo.ObjectId orderId = mongo.ObjectId();
+  final mongo.ObjectId userId = mongo.ObjectId.parse(widget.user.id);
+
+  final orderItems = cart.items.asMap().entries.map((entry) {
+    final i = entry.key;
+    final item = entry.value;
+    return OrderItem(
+      id: i + 1,
+      orderId: orderId,
+      productId: item.productId,
+      quantity: item.quantity,
+      price: item.price,
+      productName: item.productName,
+      productImage: item.productImage,
+    );
+  }).toList();
+
+  final order = Order(
+    id: orderId,
+    userId: userId,
+    items: orderItems,
+    totalAmount: cart.totalPrice + shippingFee,
+    paymentMethod: selectedPayment,
+    paymentStatus: selectedPayment == 'COD' ? 'pending' : 'paid',
+    shippingAddress: receiverAddress ?? '',
+    billingAddress: receiverAddress ?? '',
+    phone: receiverPhone ?? '',
+    createdAt: now,
+    updatedAt: now,
+  );
+
+  if (selectedPayment == 'PayPal') {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PaypalCheckoutPage(
+          cartItems: cart.items,
+          paymentMethod: 'PayPal',
+          receiverName: receiverName ?? '',
+          receiverPhone: receiverPhone ?? '',
+          receiverAddress: receiverAddress ?? '',
+          user: widget.user,
+          userId: widget.userId,
+          onFinish: (paymentId) async {
+            try {
+              await OrderService.insertOrder(order);
+              cart.clearCart();
+
+              if (context.mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => OrderSuccessPage(
+                      paymentId: paymentId,
+                      paymentMethod: 'PayPal',
+                      receiverName: receiverName ?? '',
+                      receiverPhone: receiverPhone ?? '',
+                      receiverAddress: receiverAddress ?? '',
+                      user: widget.user,
+                      userId: widget.userId,
+                    ),
+                  ),
+                  (route) => false,
+                );
+              }
+            } catch (e) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Lỗi lưu đơn hàng: ${e.toString()}')),
+                );
+              }
+            }
+          },
+        ),
+      ),
+    );
+  } else {
+    // ✅ Xử lý thanh toán còn lại (COD, MoMo, ZaloPay)
+    try {
+      await OrderService.insertOrder(order);
+      cart.clearCart();
+
+      if (context.mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OrderSuccessPage(
+              paymentId: order.id.toHexString(), // dùng orderId làm mã thanh toán
+              paymentMethod: selectedPayment,
+              receiverName: receiverName ?? '',
+              receiverPhone: receiverPhone ?? '',
+              receiverAddress: receiverAddress ?? '',
+              user: widget.user,
+              userId: widget.userId,
+            ),
+          ),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi lưu đơn hàng: ${e.toString()}')),
+        );
+      }
+    }
+  }
+},
+
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
                 child: Text(
                   'Thanh toán ${currency.format(total)}VNĐ',
-                  style: TextStyle(color: Colors.white),
-                  ),
+                  style: const TextStyle(color: Colors.white),
+                ),
               ),
-            )
+            ),
           ],
         ),
       ),

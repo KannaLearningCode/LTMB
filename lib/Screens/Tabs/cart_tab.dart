@@ -214,7 +214,7 @@ class _CartTabState extends State<CartTab> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => ConfirmOrderScreen(user: widget.user)),
+                    MaterialPageRoute(builder: (context) => ConfirmOrderScreen(userId: widget.userId, user: widget.user)),
                   );
                 },
               ),
