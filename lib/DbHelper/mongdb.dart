@@ -5,16 +5,17 @@ import 'package:mongo_dart/mongo_dart.dart';
 import 'package:kfc_seller/constants.dart';
 
 class MongoDatabase {
-  static var db, userCollection;
+  static var db, userCollection, orderCollection;
 
   static connect() async {
     db = await Db.create(MONGO_CONN_URL);
     await db.open();
     inspect(db);
     userCollection = db.collection(USER_COLLECTION);
-    
+    orderCollection = db.collection(ORDER_COLLECTION);
     // Tạo tài khoản admin mặc định nếu chưa có
     await createDefaultAdmin();
+    return db;
   }
 
   static Future<bool> insert(Mongodbmodel data) async {

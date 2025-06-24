@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kfc_seller/Screens/Authen/change_password_screen.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -26,22 +27,31 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   void _sendResetEmail() {
-    if (_formKey.currentState!.validate()) {
-      // TODO: Implement password reset logic
-      print("Reset password for email: ${emailController.text}");
-      // Hiển thị thông báo thành công
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Đã gửi email khôi phục mật khẩu!'),
-          backgroundColor: Colors.green,
+  if (_formKey.currentState!.validate()) {
+    // Thông báo thành công
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Đã gửi email khôi phục mật khẩu!'),
+        backgroundColor: Colors.green,
+      ),
+    );
+
+    // Điều hướng sang trang đổi mật khẩu sau 1 khoảng delay nhỏ để hiển thị SnackBar
+    Future.delayed(const Duration(milliseconds: 500), () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ChangePasswordScreen(email: emailController.text),
         ),
       );
-    }
+    });
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
-    final themeRedColor = Colors.red.shade700;
+    final themeRedColor = Colors.green;
 
     return Scaffold(
       backgroundColor: Colors.white,

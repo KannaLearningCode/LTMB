@@ -85,7 +85,7 @@ class AdminScreen extends StatelessWidget {
               Icon(
                 icon,
                 size: 48,
-                color: Color(0xFFB7252A),
+                color: Colors.green,
               ),
               SizedBox(height: 16),
               Text(
@@ -111,7 +111,7 @@ class AdminScreen extends StatelessWidget {
           'Quản lý KFC',
           style: TextStyle(color: Colors.white), // Đổi màu chữ ở đây
         ),
-        backgroundColor: Color(0xFFB7252A),
+        backgroundColor: Colors.green,
         automaticallyImplyLeading: false,
         actions: [
     IconButton(

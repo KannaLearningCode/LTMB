@@ -128,8 +128,12 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Quản lý danh mục'),
-        backgroundColor: Color(0xFFB7252A),
+        title: Text(
+          'Quản lý danh mục',
+          style: const TextStyle(color: Colors.white),
+          ),
+        backgroundColor: Colors.green,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: FutureBuilder(
         future: MongoDatabase.db.collection('categories').find().toList(),
@@ -220,7 +224,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showCategoryForm(),
         child: Icon(Icons.add),
-        backgroundColor: Color(0xFFB7252A),
+        backgroundColor: Colors.green,
       ),
     );
   }

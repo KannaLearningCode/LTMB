@@ -1,182 +1,224 @@
 import 'package:flutter/material.dart';
-import 'package:kfc_seller/DbHelper/mongdb.dart';
-import 'package:mongo_dart/mongo_dart.dart' as M;
+import 'package:intl/intl.dart';
+import 'package:kfc_seller/Models/order.dart';
+import 'package:kfc_seller/Models/Mongdbmodel.dart';
+import 'package:kfc_seller/Screens/Order/order_service.dart';
+import 'package:mongo_dart/mongo_dart.dart' as mongo;
 
 class OrderManagementScreen extends StatefulWidget {
-  const OrderManagementScreen({Key? key}) : super(key: key);
+  const OrderManagementScreen({super.key});
 
   @override
   State<OrderManagementScreen> createState() => _OrderManagementScreenState();
 }
 
 class _OrderManagementScreenState extends State<OrderManagementScreen> {
+  List<Order> orders = [];
+  final currency = NumberFormat.currency(locale: 'vi_VN', symbol: '');
+  final Map<String, String> userNames = {}; // userId -> userName
+
+  String? selectedPaymentMethod;
+  String? selectedStatus;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchOrders();
+  }
+
+  Future<void> fetchOrders() async {
+    try {
+      final fetchedOrders = await OrderService.getAllOrders();
+
+      for (var order in fetchedOrders) {
+        final userId = order.userId.toHexString();
+        if (!userNames.containsKey(userId)) {
+          final user = await OrderService.getUserById(userId);
+          if (user != null) {
+            userNames[userId] = user.fullName?.isNotEmpty == true
+                ? user.fullName!
+                : user.name;
+          } else {
+            userNames[userId] = 'Không xác định';
+          }
+        }
+      }
+
+      setState(() {
+        orders = fetchedOrders;
+      });
+    } catch (e) {
+      debugPrint('Lỗi tải đơn hàng: $e');
+    }
+  }
+
+  List<Order> get filteredOrders {
+    return orders.where((order) {
+      final matchMethod = selectedPaymentMethod == null || order.paymentMethod == selectedPaymentMethod;
+      final matchStatus = selectedStatus == null || order.status == selectedStatus;
+      return matchMethod && matchStatus;
+    }).toList();
+  }
+
+  void showOrderDetailPopup(Order order) {
+    final userName = userNames[order.userId.toHexString()] ?? 'Không có';
+
+    showDialog(
+      context: context,
+      builder: (_) {
+        final isFinalStatus = order.status == "Đã xác nhận" || order.status == "Đã hủy";
+
+        return AlertDialog(
+          title: Text('Chi tiết đơn hàng #${order.id.toHexString().substring(18)}'),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Thông tin người đặt', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 6),
+                Text('Họ tên: $userName'),
+                Text('SĐT: ${order.phone}'),
+                Text('Địa chỉ: ${order.shippingAddress}'),
+                Text('Phương thức thanh toán: ${order.paymentMethod}'),
+                Text('Trạng thái: ${order.paymentStatus.toUpperCase()}'),
+                const SizedBox(height: 12),
+                const Text('Danh sách sản phẩm', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 6),
+                ...order.items.map((item) => ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Image.network(item.productImage, width: 50, height: 50, fit: BoxFit.cover),
+                      title: Text(item.productName),
+                      subtitle: Text('SL: ${item.quantity} | Đơn giá: ${currency.format(item.price)} VNĐ'),
+                    )),
+                Text('Tổng cộng: ${currency.format(order.totalAmount)} VNĐ',
+                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Đóng'),
+            ),
+            if (!isFinalStatus) ...[
+              TextButton(
+                onPressed: () async {
+                  await OrderService.updateOrderStatus(order.id, "Đã xác nhận");
+                  Navigator.pop(context);
+                  fetchOrders();
+                },
+                child: const Text('✅ Xác nhận', style: TextStyle(color: Colors.green)),
+              ),
+              TextButton(
+                onPressed: () async {
+                  await OrderService.updateOrderStatus(order.id, "Đã hủy");
+                  Navigator.pop(context);
+                  fetchOrders();
+                },
+                child: const Text('❌ Hủy', style: TextStyle(color: Colors.red)),
+              ),
+            ] else ...[
+              const Padding(
+                padding: EdgeInsets.only(bottom: 12),
+                child: Text(
+                  '❗ Trạng thái đã cố định, không thể thay đổi',
+                  style: TextStyle(color: Colors.red, fontStyle: FontStyle.italic),
+                ),
+              ),
+            ]
+          ],
+        );
+      },
+    );
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Quản lý đơn hàng'),
-        backgroundColor: Color(0xFFB7252A),
+        title: const Text('Quản lý đơn hàng', style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.green,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: FutureBuilder(
-        future: MongoDatabase.db.collection('orders').find().toList(),
-        builder: (context, AsyncSnapshot<List<Map<String, dynamic>>> snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return Center(child: Text('Lỗi: ${snapshot.error}'));
-          }
-
-          final orders = snapshot.data ?? [];
-
-          if (orders.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+      body: RefreshIndicator(
+        onRefresh: fetchOrders,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
                 children: [
-                  Icon(
-                    Icons.shopping_cart_outlined,
-                    size: 64,
-                    color: Colors.grey,
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: selectedPaymentMethod,
+                      decoration: const InputDecoration(labelText: 'Phương thức'),
+                      items: <String?>[null, 'COD', 'PayPal']
+                          .map((method) => DropdownMenuItem(
+                                value: method,
+                                child: Text(method ?? 'Tất cả'),
+                              ))
+                          .toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          selectedPaymentMethod = value;
+                        });
+                      },
+                    ),
                   ),
-                  SizedBox(height: 16),
-                  Text(
-                    'Chưa có đơn hàng nào',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: selectedStatus,
+                      decoration: const InputDecoration(labelText: 'Trạng thái'),
+                      items: <String?>[null, 'Đã xác nhận', 'Đã hủy', 'Đang xử lý']
+                          .map((status) => DropdownMenuItem(
+                                value: status,
+                                child: Text(status ?? 'Tất cả'),
+                              ))
+                          .toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          selectedStatus = value;
+                        });
+                      },
                     ),
                   ),
                 ],
               ),
-            );
-          }
-
-          return ListView.builder(
-            itemCount: orders.length,
-            itemBuilder: (context, index) {
-              final order = orders[index];
-              return Card(
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: ExpansionTile(
-                  title: Text(
-                    'Đơn hàng #${order['_id'].toString().substring(0, 8)}',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Khách hàng: ${order['customerName'] ?? 'N/A'}'),
-                      Text('Trạng thái: ${order['status'] ?? 'Đang xử lý'}'),
-                    ],
-                  ),
-                  children: [
-                    Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Chi tiết đơn hàng:',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            Expanded(
+              child: filteredOrders.isEmpty
+                  ? const Center(child: Text('Không có đơn hàng'))
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(12),
+                      itemCount: filteredOrders.length,
+                      itemBuilder: (context, index) {
+                        final order = filteredOrders[index];
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          elevation: 2,
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.all(12),
+                            title: Text('Đơn hàng #${order.id.toHexString().substring(18)}'),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Trạng thái: ${order.status.toUpperCase()}'),
+                                Text('Tổng tiền: ${currency.format(order.totalAmount)} VNĐ'),
+                                Text('Thời gian: ${DateFormat('dd/MM/yyyy HH:mm').format(order.createdAt)}'),
+                              ],
+                            ),
+                            trailing: const Icon(Icons.info_outline),
+                            onTap: () => showOrderDetailPopup(order),
                           ),
-                          SizedBox(height: 8),
-                          if (order['items'] != null)
-                            ...List.from(order['items']).map((item) => ListTile(
-                              dense: true,
-                              title: Text(item['name'] ?? 'N/A'),
-                              trailing: Text('${item['quantity']} x ${item['price']} đ'),
-                            )),
-                          Divider(),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Tổng tiền:',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              Text(
-                                '${order['totalAmount'] ?? 0} đ',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFFB7252A),
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              ElevatedButton(
-                                onPressed: () async {
-                                  try {
-                                    await MongoDatabase.db.collection('orders').update(
-                                      M.where.id(order['_id']),
-                                      M.modify.set('status', 'Đã xác nhận'),
-                                    );
-                                    setState(() {});
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Đã xác nhận đơn hàng'),
-                                        backgroundColor: Colors.green,
-                                      ),
-                                    );
-                                  } catch (e) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Lỗi: $e'),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                  }
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.green,
-                                ),
-                                child: Text('Xác nhận'),
-                              ),
-                              ElevatedButton(
-                                onPressed: () async {
-                                  try {
-                                    await MongoDatabase.db.collection('orders').update(
-                                      M.where.id(order['_id']),
-                                      M.modify.set('status', 'Đã hủy'),
-                                    );
-                                    setState(() {});
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Đã hủy đơn hàng'),
-                                        backgroundColor: Colors.orange,
-                                      ),
-                                    );
-                                  } catch (e) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Lỗi: $e'),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                  }
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.red,
-                                ),
-                                child: Text('Hủy'),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
-                  ],
-                ),
-              );
-            },
-          );
-        },
+            ),
+          ],
+        ),
       ),
     );
   }
-} 
+}

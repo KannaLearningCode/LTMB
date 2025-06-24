@@ -341,7 +341,7 @@ void _showShippingInfoBottomSheet(BuildContext context) {
     items: orderItems,
     totalAmount: cart.totalPrice + shippingFee,
     paymentMethod: selectedPayment,
-    paymentStatus: selectedPayment == 'COD' ? 'pending' : 'paid',
+    paymentStatus: selectedPayment == 'COD' ? 'Đang xử lý' : 'Đã thanh toán',
     shippingAddress: receiverAddress ?? '',
     billingAddress: receiverAddress ?? '',
     phone: receiverPhone ?? '',
