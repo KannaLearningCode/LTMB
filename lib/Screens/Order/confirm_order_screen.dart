@@ -227,29 +227,39 @@ void _showShippingInfoBottomSheet(BuildContext context) {
             ),
             const SizedBox(height: 8),
             Row(
+              
   children: [
     Expanded(
       child: GestureDetector(
         onTap: () async {
-          final selectedCode = await showMenu<String>(
-            context: context,
-            position: const RelativeRect.fromLTRB(100, 400, 100, 100), // Vị trí menu, có thể điều chỉnh
-            items: availableCoupons.map((coupon) {
-              final displayValue = coupon.discountType == 'percentage'
-                  ? '${coupon.discountValue}%'
-                  : '${coupon.discountValue.toStringAsFixed(0)}đ';
-              return PopupMenuItem<String>(
-                value: coupon.code,
-                child: Text('${coupon.code} ($displayValue)'),
-              );
-            }).toList(),
-          );
-          if (selectedCode != null) {
-            setState(() {
-              discountController.text = selectedCode;
-            });
-          }
-        },
+  if (availableCoupons.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Không có mã giảm giá khả dụng.')),
+    );
+    return;
+  }
+
+  final selectedCode = await showMenu<String>(
+    context: context,
+    position: const RelativeRect.fromLTRB(100, 400, 100, 100),
+    items: availableCoupons.map((coupon) {
+      final displayValue = coupon.discountType == 'percentage'
+          ? '${coupon.discountValue}%'
+          : '${coupon.discountValue.toStringAsFixed(0)}đ';
+      return PopupMenuItem<String>(
+        value: coupon.code,
+        child: Text('${coupon.code} ($displayValue)'),
+      );
+    }).toList(),
+  );
+
+  if (selectedCode != null) {
+    setState(() {
+      discountController.text = selectedCode;
+    });
+  }
+},
+
         child: AbsorbPointer(
           child: TextField(
             controller: discountController,
