@@ -3,7 +3,7 @@ import 'package:kfc_seller/DbHelper/mongdb.dart';
 import 'package:kfc_seller/Models/Mongdbmodel.dart';
 
 class UserManagementScreen extends StatefulWidget {
-  const UserManagementScreen({Key? key}) : super(key: key);
+  const UserManagementScreen({super.key});
 
   @override
   State<UserManagementScreen> createState() => _UserManagementScreenState();

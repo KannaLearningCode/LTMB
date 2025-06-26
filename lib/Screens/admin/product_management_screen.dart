@@ -7,7 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:cloudinary_public/cloudinary_public.dart';
 
 class ProductManagementScreen extends StatefulWidget {
-  const ProductManagementScreen({Key? key}) : super(key: key);
+  const ProductManagementScreen({super.key});
 
   @override
   State<ProductManagementScreen> createState() => _ProductManagementScreenState();
@@ -290,10 +290,10 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('${product.price.toStringAsFixed(0)}đ', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                      Text('${product.price.toStringAsFixed(0)} VNĐ', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
                       Text('Danh mục: ${product.category}', style: TextStyle(color: Colors.grey[600])),
                       if (product.quantity > 0) Text('Số lượng: ${product.quantity}', style: TextStyle(color: Colors.grey[600])),
-                      if (product.compareAtPrice != null) Text('Giá gốc: ${product.compareAtPrice?.toStringAsFixed(0)}đ', style: const TextStyle(color: Colors.grey, decoration: TextDecoration.lineThrough)),
+                      if (product.compareAtPrice != null) Text('Giá gốc: ${product.compareAtPrice?.toStringAsFixed(0)} VNĐ', style: const TextStyle(color: Colors.grey, decoration: TextDecoration.lineThrough)),
                       if (product.sku != null && product.sku!.isNotEmpty) Text('SKU: ${product.sku}', style: TextStyle(color: Colors.grey[600])),
                     ],
                   ),
@@ -344,8 +344,8 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showProductForm(),
-        child: const Icon(Icons.add),
         backgroundColor: Colors.green,
+        child: const Icon(Icons.add),
       ),
     );
   }

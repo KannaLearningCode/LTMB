@@ -10,7 +10,7 @@ import 'package:kfc_seller/Models/Mongdbmodel.dart'; // Thêm dòng này
 
 class LoginScreen extends StatefulWidget {
 
-  const LoginScreen({Key? key,}) : super(key: key);
+  const LoginScreen({super.key,});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
