@@ -7,7 +7,7 @@ import 'package:kfc_seller/Screens/Authen/login_screen.dart'; // Thêm import lo
 import 'package:kfc_seller/utils/password_hash.dart'; // Thêm import
 
 class MongoDbInsert extends StatefulWidget {
-  MongoDbInsert({Key? key}) : super(key: key);
+  const MongoDbInsert({super.key});
 
   @override
   _MongoDbInsertState createState() => _MongoDbInsertState();
@@ -434,9 +434,9 @@ Future<bool> _checkEmailExists(String email) async {
     // Mã hóa mật khẩu trước khi lưu
     String hashedPassword = PasswordHash.hashPassword(password);
 
-    var _id = M.ObjectId();
+    var id = M.ObjectId();
     final data = Mongodbmodel(
-      id: _id.$oid,
+      id: id.$oid,
       name: name,
       email: email,
       password: hashedPassword, // Lưu mật khẩu đã mã hóa

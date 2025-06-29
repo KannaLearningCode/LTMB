@@ -13,7 +13,7 @@ class DetailProductPage extends StatefulWidget {
   final mongo.ObjectId userId;
   final Mongodbmodel user;
 
-  const DetailProductPage({Key? key, required this.product, required this.userId, required this.user}) : super(key: key);
+  const DetailProductPage({super.key, required this.product, required this.userId, required this.user});
 
   @override
   State<DetailProductPage> createState() => _DetailProductPageState();

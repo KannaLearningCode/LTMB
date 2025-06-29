@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kfc_seller/Models/order.dart';
-import 'package:kfc_seller/Models/Mongdbmodel.dart';
 import 'package:kfc_seller/Screens/Order/order_service.dart';
-import 'package:mongo_dart/mongo_dart.dart' as mongo;
 
 class OrderManagementScreen extends StatefulWidget {
   const OrderManagementScreen({super.key});
@@ -16,6 +14,7 @@ class _OrderManagementScreenState extends State<OrderManagementScreen> {
   List<Order> orders = [];
   final currency = NumberFormat.currency(locale: 'vi_VN', symbol: '');
   final Map<String, String> userNames = {}; // userId -> userName
+
 
   String? selectedPaymentMethod;
   String? selectedStatus;
@@ -79,6 +78,8 @@ class _OrderManagementScreenState extends State<OrderManagementScreen> {
                 Text('Họ tên: $userName'),
                 Text('SĐT: ${order.phone}'),
                 Text('Địa chỉ: ${order.shippingAddress}'),
+                // if (order.voucherCode != null && order.voucherCode!.isNotEmpty)
+                // Text('Mã giảm giá: ${order.voucherCode}'),
                 Text('Phương thức thanh toán: ${order.paymentMethod}'),
                 Text('Trạng thái: ${order.paymentStatus.toUpperCase()}'),
                 const SizedBox(height: 12),
@@ -90,8 +91,15 @@ class _OrderManagementScreenState extends State<OrderManagementScreen> {
                       title: Text(item.productName),
                       subtitle: Text('SL: ${item.quantity} | Đơn giá: ${currency.format(item.price)} VNĐ'),
                     )),
+                // if (order.discountAmount > 0) ...[
+                //   const SizedBox(height: 6),
+                //   Text('Giảm giá: -${currency.format(order.discountAmount)} VNĐ',
+                //       style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                // ],
+                const SizedBox(height: 6),
                 Text('Tổng cộng: ${currency.format(order.totalAmount)} VNĐ',
                     style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+
               ],
             ),
           ),

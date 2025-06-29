@@ -9,7 +9,7 @@
   class MenuTab extends StatefulWidget {
     final mongo.ObjectId userId;
     final Mongodbmodel user;
-    const MenuTab({Key? key, required this.userId, required this.user}) : super(key: key);
+    const MenuTab({super.key, required this.userId, required this.user});
 
     @override
     State<MenuTab> createState() => _MenuTabState();

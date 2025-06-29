@@ -13,10 +13,10 @@ class HomeScreen extends StatefulWidget {
   final mongo.ObjectId userId;
   final Mongodbmodel user;
   const HomeScreen({
-    Key? key,
+    super.key,
     this.index = 0,
     required this.userId, required this.user,
-  }) : super(key: key);
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();

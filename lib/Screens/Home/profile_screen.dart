@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+  const ProfileScreen({super.key});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  int _selectedIndex = 3;
+  final int _selectedIndex = 3;
   final ScrollController _scrollController = ScrollController();
 
   final List<Map<String, dynamic>> menuItems = [

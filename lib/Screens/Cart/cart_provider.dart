@@ -55,8 +55,6 @@ Future<void> decreaseQuantity(ObjectId productId) async {
 
   // ✅ Sửa: dùng _userId thay vì item.userId
   Future<void> _saveCartToDb() async {
-    if (_userId == null) return;
-
     final existingCart = await fetchCartForUser(_userId);
 
     final cart = Cart(

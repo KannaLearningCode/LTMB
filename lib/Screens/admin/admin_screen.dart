@@ -4,12 +4,13 @@ import 'package:kfc_seller/Screens/admin/product_management_screen.dart';
 import 'package:kfc_seller/Screens/admin/user_management_screen.dart';
 import 'package:kfc_seller/Screens/admin/category_management_screen.dart';
 import 'package:kfc_seller/Screens/admin/order_management_screen.dart';
+import 'package:kfc_seller/Screens/admin/voucher_management_screen.dart';
 import 'package:mongo_dart/mongo_dart.dart' as M;
 import 'package:kfc_seller/DbHelper/mongdb.dart';
 import 'package:kfc_seller/Screens/Authen/login_screen.dart';
 
 class AdminScreen extends StatelessWidget {
-  const AdminScreen({Key? key}) : super(key: key);
+  const AdminScreen({super.key});
 
   // Hàm tạo item quản lý
   Widget _buildManagementItem(
@@ -108,7 +109,7 @@ class AdminScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Quản lý KFC',
+          'Quản lý CKICKY',
           style: TextStyle(color: Colors.white), // Đổi màu chữ ở đây
         ),
         backgroundColor: Colors.green,
@@ -199,6 +200,14 @@ class AdminScreen extends StatelessWidget {
                     'Quản lý đơn hàng',
                     Icons.shopping_cart,
                     OrderManagementScreen(),
+                  ),
+
+                  // Quản lý mã giảm giá
+                    _buildAdminTile(
+                    context,
+                    'Quản lý mã giảm giá',
+                    Icons.card_giftcard,
+                    VoucherManagementScreen(),
                   ),
                 ],
               ),
