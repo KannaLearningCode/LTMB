@@ -31,9 +31,14 @@ class _ConfirmOrderScreenState extends State<ConfirmOrderScreen> {
   String selectedPayment = 'COD'; // COD, MoMo, PayPal, ZaloPay
   final shippingFee = 20000;
   final TextEditingController discountController = TextEditingController();
-
+  final GlobalKey _dropdownKey = GlobalKey();
   List<Coupon> availableCoupons = [];
   bool isLoadingCoupons = true;
+
+  Coupon? appliedCoupon;
+  double discountAmount = 0;
+
+
   // 🔽 Thêm biến lưu thông tin người nhận
   String? receiverName;
   String? receiverPhone;
@@ -45,7 +50,30 @@ class _ConfirmOrderScreenState extends State<ConfirmOrderScreen> {
     receiverName = widget.user.name ?? '';
     receiverPhone = widget.user.phone ?? '';
     receiverAddress = widget.user.address ?? '';
+    loadAvailableCoupons();
   }
+
+void loadAvailableCoupons() async {
+  final allCoupons = await CouponService.fetchCoupons();
+  final now = DateTime.now();
+
+  print('All coupons: ${allCoupons.map((c) => c.code)}'); // 🔍 Debug
+  for (var c in allCoupons) {
+    print(
+      '↪️ ${c.code} | active: ${c.isActive} | used: ${c.usedCount}/${c.usageLimit} | expiresAt: ${c.expiresAt}');
+  }
+
+  setState(() {
+    availableCoupons = allCoupons.where((coupon) =>
+      coupon.isActive &&
+      (coupon.usageLimit == 0 || coupon.usageLimit > coupon.usedCount) &&
+      (coupon.expiresAt == null || coupon.expiresAt!.isAfter(now))
+    ).toList();
+  });
+}
+
+
+
 void _fetchAvailableCoupons() async {
     try {
       final coupons = await CouponService.fetchCoupons();
@@ -65,6 +93,8 @@ void _fetchAvailableCoupons() async {
       });
     }
   }
+
+
 
 void _showShippingInfoBottomSheet(BuildContext context) {
   final nameController = TextEditingController(text: receiverName);
@@ -134,7 +164,7 @@ void _showShippingInfoBottomSheet(BuildContext context) {
   @override
   Widget build(BuildContext context) {
     final cart = Provider.of<CartProvider>(context);
-    final total = cart.totalPrice + shippingFee;
+    final total = (cart.totalPrice - discountAmount) + shippingFee;
     
     return Scaffold(
       appBar: AppBar(
@@ -219,57 +249,61 @@ void _showShippingInfoBottomSheet(BuildContext context) {
             ),
             const SizedBox(height: 8),
             Align(
-              alignment: Alignment.centerLeft,
-              child: const Text(
-                'Bạn có mã giảm giá?', 
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16,)
-              ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              
+  alignment: Alignment.centerLeft,
+  child: const Text(
+    'Bạn có mã giảm giá?', 
+    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16,),
+  ),
+),
+const SizedBox(height: 8),
+Row(
   children: [
     Expanded(
       child: GestureDetector(
+        key: _dropdownKey,
         onTap: () async {
-  if (availableCoupons.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Không có mã giảm giá khả dụng.')),
-    );
-    return;
-  }
+          if (availableCoupons.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Không có mã giảm giá khả dụng.')),
+            );
+            return;
+          }
 
-  final selectedCode = await showMenu<String>(
-    context: context,
-    position: const RelativeRect.fromLTRB(100, 400, 100, 100),
-    items: availableCoupons.map((coupon) {
-      final displayValue = coupon.discountType == 'percentage'
-          ? '${coupon.discountValue}%'
-          : '${coupon.discountValue.toStringAsFixed(0)}đ';
-      return PopupMenuItem<String>(
-        value: coupon.code,
-        child: Text('${coupon.code} ($displayValue)'),
-      );
-    }).toList(),
-  );
+          final RenderBox renderBox =
+              _dropdownKey.currentContext!.findRenderObject() as RenderBox;
+          final Offset offset = renderBox.localToGlobal(Offset.zero);
 
-  if (selectedCode != null) {
-    setState(() {
-      discountController.text = selectedCode;
-    });
-  }
-},
+          final selectedCode = await showMenu<String>(
+            context: context,
+            position: RelativeRect.fromLTRB(
+              offset.dx,
+              offset.dy + 50, // điều chỉnh vị trí hiển thị dropdown
+              offset.dx + 200,
+              offset.dy,
+            ),
+            items: availableCoupons.map((coupon) {
+              final displayValue = coupon.discountType == 'percentage'
+                  ? '${coupon.discountValue}%'
+                  : '${coupon.discountValue.toStringAsFixed(0)}đ';
+              return PopupMenuItem<String>(
+                value: coupon.code,
+                child: Text('${coupon.code} ($displayValue)'),
+              );
+            }).toList(),
+          );
 
+          if (selectedCode != null) {
+            setState(() {
+              discountController.text = selectedCode;
+            });
+          }
+        },
         child: AbsorbPointer(
-          child: TextField(
+          child: TextFormField(
             controller: discountController,
-            style: const TextStyle(fontSize: 16),
             decoration: const InputDecoration(
-              hintText: 'Mã giảm giá *',
-              hintStyle: TextStyle(fontSize: 16),
-              border: OutlineInputBorder(),
+              labelText: 'Chọn mã giảm giá',
               suffixIcon: Icon(Icons.arrow_drop_down),
-              contentPadding: EdgeInsets.symmetric(horizontal: 12),
             ),
           ),
         ),
@@ -278,13 +312,78 @@ void _showShippingInfoBottomSheet(BuildContext context) {
     const SizedBox(width: 8),
     ElevatedButton(
       onPressed: () {
-        // TODO: Áp dụng mã giảm giá
-      },
+  final enteredCode = discountController.text.trim();
+  final coupon = availableCoupons.firstWhere(
+    (c) => c.code == enteredCode,
+    orElse: () => Coupon(
+      id: mongo.ObjectId(),
+      code: '',
+      discountType: 'fixed',
+      discountValue: 0,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      isActive: false,
+    ),
+  );
+
+  if (coupon.code.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Mã giảm giá không hợp lệ.')),
+    );
+  } else {
+    // ✅ Tính số tiền giảm
+    final cartTotal = widget.totalPrice;
+    double calculatedDiscount = 0;
+
+    if (coupon.discountType == 'percentage') {
+      calculatedDiscount = (cartTotal * coupon.discountValue / 100);
+      if (coupon.maxDiscountAmount > 0 &&
+          calculatedDiscount > coupon.maxDiscountAmount) {
+        calculatedDiscount = coupon.maxDiscountAmount;
+      }
+    } else {
+      calculatedDiscount = coupon.discountValue;
+    }
+
+    // Không cho giảm quá tổng tiền
+    if (calculatedDiscount > cartTotal) {
+      calculatedDiscount = cartTotal;
+    }
+
+    setState(() {
+      appliedCoupon = coupon;
+      discountAmount = calculatedDiscount;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Áp dụng mã ${coupon.code} thành công!')),
+    );
+  }
+},
+
       style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
       child: const Text('Áp dụng', style: TextStyle(color: Colors.white)),
     ),
+    if (appliedCoupon != null)
+  TextButton.icon(
+    onPressed: () {
+      setState(() {
+        appliedCoupon = null;
+        discountAmount = 0;
+        discountController.clear();
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Đã hủy mã giảm giá.')),
+      );
+    },
+    icon: const Icon(Icons.close, color: Colors.red),
+    label: const Text('Hủy mã', style: TextStyle(color: Colors.red)),
+  ),
+
   ],
 ),
+
 
             
             const SizedBox(height: 16),
@@ -301,6 +400,15 @@ void _showShippingInfoBottomSheet(BuildContext context) {
                   '${currency.format(cart.totalPrice)}VNĐ',
                     style: TextStyle(fontSize: 16),
                 ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            if (discountAmount > 0)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Giảm giá:', style: TextStyle(fontSize: 16)),
+                Text('-${currency.format(discountAmount)}VNĐ', style: const TextStyle(fontSize: 16, color: Colors.green)),
               ],
             ),
             const SizedBox(height: 4),
@@ -430,6 +538,7 @@ void _showShippingInfoBottomSheet(BuildContext context) {
                           receiverAddress: receiverAddress ?? '',
                           user: widget.user,
                           userId: widget.userId,
+                          discountAmount: discountAmount,
                           onFinish: (paymentId) async {
                             try {
                               await OrderService.insertOrder(order);

@@ -14,6 +14,7 @@ class PaypalCheckoutPage extends StatefulWidget {
   final String receiverAddress;
   final Mongodbmodel user;
   final mongo.ObjectId userId;
+  final double discountAmount; // 🔥 Thêm dòng này
 
   const PaypalCheckoutPage({
     super.key,
@@ -25,6 +26,7 @@ class PaypalCheckoutPage extends StatefulWidget {
     required this.receiverAddress,
     required this.user,
     required this.userId,
+    required this.discountAmount,
   });
 
   @override
@@ -101,7 +103,7 @@ class _PaypalCheckoutPageState extends State<PaypalCheckoutPage> {
 
       final transactions = getOrderParams(widget.cartItems);
       final res = await services.createPaypalPayment(transactions, accessToken!);
-
+print("📦 Phản hồi từ PayPal: $res");
       if (res != null) {
         setState(() {
           checkoutUrl = res["approvalUrl"];
@@ -133,50 +135,72 @@ class _PaypalCheckoutPageState extends State<PaypalCheckoutPage> {
   }
 
   Map<String, dynamic> getOrderParams(List<CartItem> cartItems) {
-    const double exchangeRate = 25000; // 1 USD = 25,000 VNĐ
+  const double exchangeRate = 25000; // 1 USD = 25,000 VNĐ
 
-    List items = cartItems.map((item) => {
-          "name": item.productName,
-          "quantity": item.quantity.toString(),
-          "price": (item.price / exchangeRate).toStringAsFixed(2),
-          "currency": defaultCurrency["currency"]
-        }).toList();
+  // 🧮 Tính tổng giá trước khi giảm giá
+  double subtotalUSD = cartItems.fold(
+    0,
+    (sum, item) => sum + (item.price * item.quantity) / exchangeRate,
+  );
 
-    double totalPrice = cartItems.fold(
-      0,
-      (sum, item) => sum + (item.price * item.quantity) / exchangeRate,
-    );
+  double discountUSD = widget.discountAmount / exchangeRate;
+  double finalTotal = subtotalUSD - discountUSD;
 
-    return {
-      "intent": "sale",
-      "payer": {"payment_method": "paypal"},
-      "transactions": [
-        {
-          "amount": {
-            "total": totalPrice.toStringAsFixed(2),
-            "currency": defaultCurrency["currency"],
-            "details": {
-              "subtotal": totalPrice.toStringAsFixed(2),
-              "shipping": '0',
-              "shipping_discount": '0.00'
-            }
-          },
-          "description": "Mô tả thanh toán đơn hàng.",
-          "payment_options": {
-            "allowed_payment_method": "INSTANT_FUNDING_SOURCE"
-          },
-          "item_list": {
-            "items": items,
-          }
-        }
-      ],
-      "note_to_payer": "Liên hệ chúng tôi nếu có bất kỳ thắc mắc nào.",
-      "redirect_urls": {
-        "return_url": returnURL,
-        "cancel_url": cancelURL,
-      }
-    };
+  if (finalTotal < 0.01) {
+    showError("Số tiền sau giảm giá quá thấp, không thể thanh toán qua PayPal.");
+    return {};
   }
+
+  // 🎯 Danh sách sản phẩm
+  List<Map<String, dynamic>> items = cartItems.map((item) => {
+        "name": item.productName,
+        "quantity": item.quantity.toString(),
+        "price": (item.price / exchangeRate).toStringAsFixed(2),
+        "currency": defaultCurrency["currency"]
+      }).toList();
+
+  // ✅ Thêm item giảm giá âm vào đây
+  if (discountUSD > 0) {
+    items.add({
+      "name": "Giảm giá",
+      "quantity": "1",
+      "price": (-discountUSD).toStringAsFixed(2),
+      "currency": defaultCurrency["currency"]
+    });
+  }
+
+  return {
+    "intent": "sale",
+    "payer": {"payment_method": "paypal"},
+    "transactions": [
+      {
+        "amount": {
+          "total": finalTotal.toStringAsFixed(2),
+          "currency": defaultCurrency["currency"],
+          "details": {
+            "subtotal": finalTotal.toStringAsFixed(2),
+            "shipping": '0',
+            "shipping_discount": '0.00'
+          }
+        },
+        "description": "Thanh toán đơn hàng qua PayPal.",
+        "payment_options": {
+          "allowed_payment_method": "INSTANT_FUNDING_SOURCE"
+        },
+        "item_list": {
+          "items": items,
+        }
+      }
+    ],
+    "note_to_payer": "Liên hệ chúng tôi nếu có bất kỳ thắc mắc nào.",
+    "redirect_urls": {
+      "return_url": returnURL,
+      "cancel_url": cancelURL,
+    }
+  };
+}
+
+
 
   @override
   Widget build(BuildContext context) {

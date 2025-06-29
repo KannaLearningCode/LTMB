@@ -135,10 +135,15 @@ class _VoucherManagementScreenState extends State<VoucherManagementScreen> {
                 discountType: _selectedType,
                 discountValue: value,
                 usageLimit: usageLimit,
+                usedCount: 0,
+                isActive: true,
                 createdAt: DateTime.now(),
                 updatedAt: DateTime.now(),
                 expiresAt: _selectedDate,
+                minOrderAmount: 0.0,
+                maxDiscountAmount: 0.0,
               );
+
 
               await CouponService.addCoupon(newCoupon);
 

@@ -51,6 +51,7 @@ class Order {
   final ObjectId userId;
   final List<OrderItem> items;
   final double totalAmount;
+  // final double discountAmount;
   final String status;
   final String paymentMethod;
   final String paymentStatus;
@@ -60,6 +61,7 @@ class Order {
   final ObjectId? shippingMethodId;
   final String phone;
   final String? notes;
+  final String? voucherCode; // ✅ Thêm dòng này
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -68,6 +70,7 @@ class Order {
     required this.userId,
     required this.items,
     required this.totalAmount,
+    // required this.discountAmount,
     this.status = 'Đang xử lý',
     required this.paymentMethod,
     this.paymentStatus = 'Chưa thanh toán',
@@ -77,6 +80,7 @@ class Order {
     this.shippingMethodId,
     required this.phone,
     this.notes,
+    this.voucherCode,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -89,6 +93,7 @@ class Order {
           .map((item) => OrderItem.fromJson(item))
           .toList(),
       totalAmount: (json['totalAmount'] as num).toDouble(),
+      // discountAmount: (json['discountAmount'] ?? 0).toDouble(),
       status: json['status'] ?? 'Đang xử lý',
       paymentMethod: json['paymentMethod'] ?? '',
       paymentStatus: json['paymentStatus'] ?? 'Chưa thanh toán',
@@ -98,6 +103,7 @@ class Order {
       shippingMethodId: json['shippingMethodId'],
       phone: json['phone'] ?? '',
       notes: json['notes'],
+      voucherCode: json['voucherCode'],
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
     );
@@ -109,6 +115,7 @@ class Order {
       'userId': userId,
       'items': items.map((item) => item.toJson()).toList(),
       'totalAmount': totalAmount,
+      // 'discountAmount': discountAmount,
       'status': status,
       'paymentMethod': paymentMethod,
       'paymentStatus': paymentStatus,
@@ -118,6 +125,7 @@ class Order {
       'shippingMethodId': shippingMethodId,
       'phone': phone,
       'notes': notes,
+      'voucherCode': voucherCode,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
