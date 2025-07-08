@@ -126,7 +126,7 @@ class MenuTabRedesignedState extends State<MenuTabRedesigned>
       filtered = filtered.where((p) => 
         p.name.toLowerCase().contains(searchQuery.toLowerCase()) ||
         p.category.toLowerCase().contains(searchQuery.toLowerCase()) ||
-        (p.description?.toLowerCase().contains(searchQuery.toLowerCase()) ?? false)
+        (p.description.toLowerCase().contains(searchQuery.toLowerCase()) ?? false)
       ).toList();
     }
     

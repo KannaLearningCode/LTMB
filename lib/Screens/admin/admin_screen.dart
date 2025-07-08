@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:kfc_seller/Models/product.dart';
 import 'package:kfc_seller/Screens/admin/product_management_screen.dart';
 import 'package:kfc_seller/Screens/admin/user_management_screen.dart';
 import 'package:kfc_seller/Screens/admin/category_management_screen.dart';
 import 'package:kfc_seller/Screens/admin/order_management_screen.dart';
 import 'package:kfc_seller/Screens/admin/voucher_management_screen.dart';
-import 'package:mongo_dart/mongo_dart.dart' as M;
-import 'package:kfc_seller/DbHelper/mongdb.dart';
 import 'package:kfc_seller/Screens/Authen/login_screen_old.dart';
 
 class AdminScreen extends StatelessWidget {

@@ -7,11 +7,11 @@ class VNPayWebViewPage extends StatelessWidget {
   final Function(String)? onFinish;
 
   const VNPayWebViewPage({
-    Key? key,
+    super.key,
     required this.paymentUrl,
     required this.returnUrl,
     this.onFinish,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

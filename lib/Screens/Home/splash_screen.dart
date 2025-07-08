@@ -1,8 +1,7 @@
 // splash_screen_redesigned.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:kfc_seller/Screens/Authen/login_screen_old.dart';
-import 'package:lottie/lottie.dart'; // Thêm animation
+// Thêm animation
 import '../Authen/login_screen.dart';
 import 'package:kfc_seller/Theme/app_theme.dart';
 

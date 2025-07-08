@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:kfc_seller/Screens/Authen/Register_screen.dart';
 import 'package:kfc_seller/Screens/Authen/forgot_password_screen.dart';
 import 'package:kfc_seller/Screens/Home/home_screen.dart';
-import 'package:kfc_seller/Screens/Home/home_screen_old.dart';
 import 'package:kfc_seller/Screens/admin/admin_screen.dart';
 import 'package:kfc_seller/DbHelper/mongdb.dart';
 import 'package:kfc_seller/utils/password_hash.dart';

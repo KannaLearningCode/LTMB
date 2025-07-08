@@ -26,32 +26,32 @@ class _VoucherManagementScreenState extends State<VoucherManagementScreen> {
   }
 
   void _showAddVoucherDialog(BuildContext context) {
-  final _codeController = TextEditingController();
-  final _discountValueController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
-  String _selectedType = 'percentage';
-  final _usageLimitController = TextEditingController(); // THÊM DÒNG NÀY
+  final codeController = TextEditingController();
+  final discountValueController = TextEditingController();
+  final formKey = GlobalKey<FormState>();
+  String selectedType = 'percentage';
+  final usageLimitController = TextEditingController(); // THÊM DÒNG NÀY
 
-  DateTime? _selectedDate;
+  DateTime? selectedDate;
 
   showDialog(
     context: context,
     builder: (context) => AlertDialog(
       title: const Text('Thêm mã voucher'),
       content: Form(
-        key: _formKey,
+        key: formKey,
         child: StatefulBuilder(
           builder: (context, setState) => Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextFormField(
-                controller: _codeController,
+                controller: codeController,
                 decoration: const InputDecoration(labelText: 'Mã voucher'),
                 validator: (value) =>
                     value == null || value.isEmpty ? 'Vui lòng nhập mã voucher' : null,
               ),
               DropdownButtonFormField<String>(
-                value: _selectedType,
+                value: selectedType,
                 decoration: const InputDecoration(labelText: 'Loại giảm giá'),
                 items: const [
                   DropdownMenuItem(value: 'percentage', child: Text('Giảm theo %')),
@@ -60,13 +60,13 @@ class _VoucherManagementScreenState extends State<VoucherManagementScreen> {
                 onChanged: (value) {
                   if (value != null) {
                     setState(() {
-                      _selectedType = value;
+                      selectedType = value;
                     });
                   }
                 },
               ),
               TextFormField(
-                controller: _discountValueController,
+                controller: discountValueController,
                 decoration: const InputDecoration(labelText: 'Giá trị giảm'),
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 validator: (value) {
@@ -76,7 +76,7 @@ class _VoucherManagementScreenState extends State<VoucherManagementScreen> {
                 },
               ),
               TextFormField(
-                controller: _usageLimitController,
+                controller: usageLimitController,
                 decoration: const InputDecoration(labelText: 'Số lần sử dụng tối đa'),
                 keyboardType: const TextInputType.numberWithOptions(decimal: false),
                 validator: (value) {
@@ -90,9 +90,9 @@ class _VoucherManagementScreenState extends State<VoucherManagementScreen> {
                 children: [
                   Expanded(
                     child: Text(
-                      _selectedDate == null
+                      selectedDate == null
                           ? 'Chưa chọn ngày hết hạn'
-                          : 'Hết hạn: ${_selectedDate!.toLocal().toString().split(' ')[0]}',
+                          : 'Hết hạn: ${selectedDate!.toLocal().toString().split(' ')[0]}',
                     ),
                   ),
                   IconButton(
@@ -106,7 +106,7 @@ class _VoucherManagementScreenState extends State<VoucherManagementScreen> {
                       );
                       if (picked != null) {
                         setState(() {
-                          _selectedDate = picked;
+                          selectedDate = picked;
                         });
                       }
                     },
@@ -124,22 +124,22 @@ class _VoucherManagementScreenState extends State<VoucherManagementScreen> {
         ),
         ElevatedButton(
           onPressed: () async {
-            if (_formKey.currentState!.validate()) {
-              final code = _codeController.text.trim();
-              final value = double.parse(_discountValueController.text.trim());
-              final usageLimit = int.parse(_usageLimitController.text.trim());
+            if (formKey.currentState!.validate()) {
+              final code = codeController.text.trim();
+              final value = double.parse(discountValueController.text.trim());
+              final usageLimit = int.parse(usageLimitController.text.trim());
 
               final newCoupon = Coupon(
                 id: mongo.ObjectId(),
                 code: code,
-                discountType: _selectedType,
+                discountType: selectedType,
                 discountValue: value,
                 usageLimit: usageLimit,
                 usedCount: 0,
                 isActive: true,
                 createdAt: DateTime.now(),
                 updatedAt: DateTime.now(),
-                expiresAt: _selectedDate,
+                expiresAt: selectedDate,
                 minOrderAmount: 0.0,
                 maxDiscountAmount: 0.0,
               );
