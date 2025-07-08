@@ -1,220 +1,252 @@
 import 'package:flutter/material.dart';
-import 'package:kfc_seller/DbHelper/mongdb.dart'; //
-import 'package:kfc_seller/Models/Mongdbmodel.dart'; //
-
-import 'package:mongo_dart/mongo_dart.dart' as M;
-import 'package:kfc_seller/Screens/Authen/login_screen.dart'; // Thêm import login screen
-import 'package:kfc_seller/utils/password_hash.dart'; // Thêm import
+import 'package:flutter/services.dart';
+import 'package:kfc_seller/DbHelper/mongdb.dart';
+import 'package:kfc_seller/Models/Mongdbmodel.dart';
+import 'package:kfc_seller/Screens/Authen/login_screen.dart';
+import 'package:kfc_seller/theme/app_theme.dart';
+import 'package:kfc_seller/utils/password_hash.dart';
+import 'package:mongo_dart/mongo_dart.dart' as m;
 
 class MongoDbInsert extends StatefulWidget {
   const MongoDbInsert({super.key});
 
   @override
-  _MongoDbInsertState createState() => _MongoDbInsertState();
+  State<MongoDbInsert> createState() => _MongoDbInsertState();
 }
 
 class _MongoDbInsertState extends State<MongoDbInsert> {
-  var nameController = TextEditingController();
-  var emailController = TextEditingController();
-  var passwordController = TextEditingController();
-  var repasswordController = TextEditingController();
-  var phoneController = TextEditingController(); // Thêm controller cho số điện thoại
-  var addressController = TextEditingController();
+  // ──────────────────────────────────────────────────────────────────── CONTROLLERS
+  final nameController       = TextEditingController();
+  final emailController      = TextEditingController();
+  final phoneController      = TextEditingController();
+  final addressController    = TextEditingController();
+  final passwordController   = TextEditingController();
+  final rePasswordController = TextEditingController();
+
   DateTime? selectedBirthday;
 
-  bool _obscurePassword = true;
+  // ────────────────────────────────────────────────────────────────── UI STATE FLAGS
+  bool _obscurePassword   = true;
   bool _obscureRePassword = true;
-  
-  // Thêm biến để theo dõi trạng thái validation
-  bool _isNameValid = false;
-  bool _isEmailValid = false;
-  bool _isPhoneValid = false; // Thêm biến kiểm tra số điện thoại
+  bool _isNameValid       = false;
+  bool _isEmailValid      = false;
+  bool _isPhoneValid      = false;
+  bool _isSubmitting      = false;
 
-  // Hàm kiểm tra email hợp lệ
-  bool _validateEmail(String email) {
-    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
-  }
+  // ────────────────────────────────────────────────────────────────────── VALIDATORS
+  bool _validateEmail(String email) =>
+      RegExp(r'^[\w\-.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
 
-  // Hàm kiểm tra tên hợp lệ (nhiều hơn 3 ký tự)
-  bool _validateName(String name) {
-    return name.trim().length > 3;
-  }
+  bool _validateName(String name) => name.trim().length > 3;
 
-  // Hàm kiểm tra số điện thoại hợp lệ
-  bool _validatePhone(String phone) {
-    return RegExp(r'^[0-9]{10}$').hasMatch(phone); // Kiểm tra 10 chữ số
-  }
+  bool _validatePhone(String phone) => RegExp(r'^\d{10}$').hasMatch(phone);
 
   @override
   void initState() {
     super.initState();
-    // Thêm listeners để kiểm tra validation realtime
-    nameController.addListener(() {
-      setState(() {
-        _isNameValid = _validateName(nameController.text);
-      });
-    });
-    
-    emailController.addListener(() {
-      setState(() {
-        _isEmailValid = _validateEmail(emailController.text);
-      });
-    });
 
+    nameController.addListener(() {
+      setState(() => _isNameValid = _validateName(nameController.text));
+    });
+    emailController.addListener(() {
+      setState(() => _isEmailValid = _validateEmail(emailController.text));
+    });
     phoneController.addListener(() {
-      setState(() {
-        _isPhoneValid = _validatePhone(phoneController.text);
-      });
+      setState(() => _isPhoneValid = _validatePhone(phoneController.text));
     });
   }
 
+  // ────────────────────────────────────────────────────────────── CHECK EMAIL EXIST
+  Future<bool> _checkEmailExists(String email) async {
+    try {
+      final user =
+          await MongoDatabase.userCollection.findOne({'Email': email.trim()});
+      return user != null;
+    } catch (_) {
+      return true; // coi như tồn tại khi lỗi kết nối
+    }
+  }
+
+  // ──────────────────────────────────────────────────────────────── SUBMIT HANDLER
+  Future<void> _submit() async {
+    // 1. Validate local
+    if (!_isNameValid ||
+        !_isEmailValid ||
+        !_isPhoneValid ||
+        addressController.text.trim().isEmpty ||
+        selectedBirthday == null ||
+        passwordController.text.length < 6 ||
+        passwordController.text != rePasswordController.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng kiểm tra lại thông tin'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    // 2. Validate email duplicates
+    if (await _checkEmailExists(emailController.text.trim())) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Email đã được sử dụng'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+      setState(() => _isSubmitting = false);
+      return;
+    }
+
+    // 3. Insert user
+    final id   = m.ObjectId();
+    final salt = PasswordHash.hashPassword(passwordController.text.trim());
+
+    final user = Mongodbmodel(
+      id: id.$oid,
+      name: nameController.text.trim(),
+      email: emailController.text.trim(),
+      password: salt,
+      rePassword: salt,
+      role: 'user',
+      phone: phoneController.text.trim(),
+      address: addressController.text.trim(),
+      birthday: selectedBirthday,
+    );
+
+    final inserted = await MongoDatabase.insert(user);
+
+    setState(() => _isSubmitting = false);
+
+    if (!mounted) return;
+
+    if (inserted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Đăng ký thành công!'),
+          backgroundColor: AppColors.success,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreenRedesigned()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Đăng ký thất bại, vui lòng thử lại'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  // ────────────────────────────────────────────────────────────── INPUT DECORATION
+  InputDecoration _decoration({
+    required String label,
+    required bool isValid,
+    Widget? suffix,
+  }) =>
+      InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide:
+              BorderSide(color: isValid ? Colors.grey : AppColors.error),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide:
+              BorderSide(color: isValid ? AppColors.primary : AppColors.error),
+        ),
+        suffixIcon: suffix,
+      );
+
+  // ────────────────────────────────────────────────────────────────────────── BUILD
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 25),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 50),
+              const SizedBox(height: 32),
               Text(
-                "Đăng Ký",
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green,
-                ),
+                'Đăng ký',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 32),
+
+              // ─── Name ─────────────────────────────────────────────────────────
               TextField(
                 controller: nameController,
-                decoration: InputDecoration(
-                  labelText: "Name",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(
-                      color: nameController.text.isNotEmpty && !_isNameValid 
-                          ? Colors.green 
-                          : Colors.grey
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(
-                      color: nameController.text.isNotEmpty && !_isNameValid 
-                          ? Colors.green 
-                          : Color(0xFFB7252A)
-                    ),
-                  ),
-                  labelStyle: TextStyle(
-                    color: nameController.text.isNotEmpty && !_isNameValid 
-                        ? Colors.green 
-                        : null
-                  ),
+                decoration: _decoration(
+                  label: 'Họ và tên',
+                  isValid: _isNameValid || nameController.text.isEmpty,
                 ),
               ),
               const SizedBox(height: 20),
+
+              // ─── Email ────────────────────────────────────────────────────────
               TextField(
                 controller: emailController,
-                decoration: InputDecoration(
-                  labelText: "Email",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(
-                      color: emailController.text.isNotEmpty && !_isEmailValid 
-                          ? Colors.green 
-                          : Colors.grey
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(
-                      color: emailController.text.isNotEmpty && !_isEmailValid 
-                          ? Colors.green 
-                          : Color(0xFFB7252A)
-                    ),
-                  ),
-                  labelStyle: TextStyle(
-                    color: emailController.text.isNotEmpty && !_isEmailValid 
-                        ? Colors.green 
-                        : null
-                  ),
+                keyboardType: TextInputType.emailAddress,
+                decoration: _decoration(
+                  label: 'Email',
+                  isValid: _isEmailValid || emailController.text.isEmpty,
                 ),
               ),
               const SizedBox(height: 20),
+
+              // ─── Phone ────────────────────────────────────────────────────────
               TextField(
                 controller: phoneController,
                 keyboardType: TextInputType.phone,
-                decoration: InputDecoration(
-                  labelText: "Số điện thoại",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(
-                      color: phoneController.text.isNotEmpty && !_isPhoneValid 
-                          ? Colors.green 
-                          : Colors.grey
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(
-                      color: phoneController.text.isNotEmpty && !_isPhoneValid 
-                          ? Colors.green 
-                          : Color(0xFFB7252A)
-                    ),
-                  ),
-                  labelStyle: TextStyle(
-                    color: phoneController.text.isNotEmpty && !_isPhoneValid 
-                        ? Colors.green 
-                        : null
-                  ),
+                decoration: _decoration(
+                  label: 'Số điện thoại',
+                  isValid: _isPhoneValid || phoneController.text.isEmpty,
                 ),
               ),
               const SizedBox(height: 20),
+
+              // ─── Address ──────────────────────────────────────────────────────
               TextField(
                 controller: addressController,
-                decoration: InputDecoration(
-                  labelText: "Địa chỉ",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: Colors.grey),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: Colors.green),
-                  ),
+                decoration: _decoration(
+                  label: 'Địa chỉ',
+                  isValid: addressController.text.trim().isNotEmpty,
                 ),
               ),
               const SizedBox(height: 20),
+
+              // ─── Birthday ─────────────────────────────────────────────────────
               GestureDetector(
                 onTap: () async {
-                  DateTime? pickedDate = await showDatePicker(
+                  final picked = await showDatePicker(
                     context: context,
                     initialDate: DateTime(2000),
                     firstDate: DateTime(1900),
                     lastDate: DateTime.now(),
                   );
-                  if (pickedDate != null) {
-                    setState(() {
-                      selectedBirthday = pickedDate;
-                    });
+                  if (picked != null) {
+                    setState(() => selectedBirthday = picked);
                   }
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 18),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.grey),
                     borderRadius: BorderRadius.circular(10),
@@ -224,170 +256,120 @@ class _MongoDbInsertState extends State<MongoDbInsert> {
                     children: [
                       Text(
                         selectedBirthday != null
-                            ? "${selectedBirthday!.day}/${selectedBirthday!.month}/${selectedBirthday!.year}"
-                            : "Chọn ngày sinh",
+                            ? '${selectedBirthday!.day}/${selectedBirthday!.month}/${selectedBirthday!.year}'
+                            : 'Chọn ngày sinh',
                         style: TextStyle(
-                          color: selectedBirthday != null ? Colors.black : Colors.grey,
-                          fontSize: 16,
+                          color: selectedBirthday != null
+                              ? AppColors.textPrimary
+                              : Colors.grey,
                         ),
                       ),
-                      Icon(Icons.calendar_today, color: Colors.grey),
+                      const Icon(Icons.calendar_today, color: Colors.grey),
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 20),
+
+              // ─── Password ─────────────────────────────────────────────────────
               TextField(
                 controller: passwordController,
                 obscureText: _obscurePassword,
-                decoration: InputDecoration(
-                  labelText: "Mật khẩu",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: Colors.grey),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: Colors.green),
-                  ),
-                  suffixIcon: IconButton(
+                decoration: _decoration(
+                  label: 'Mật khẩu',
+                  isValid: passwordController.text.length >= 6 ||
+                      passwordController.text.isEmpty,
+                  suffix: IconButton(
                     icon: Icon(
-                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
                       color: Colors.grey,
                     ),
-                    onPressed: () {
-                      setState(() {
-                        _obscurePassword = !_obscurePassword;
-                      });
-                    },
+                    onPressed: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
                   ),
                 ),
               ),
               const SizedBox(height: 20),
+
+              // ─── Re-Password ─────────────────────────────────────────────────
               TextField(
-                controller: repasswordController,
+                controller: rePasswordController,
                 obscureText: _obscureRePassword,
-                decoration: InputDecoration(
-                  labelText: "Nhập lại mật khẩu",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: Colors.grey),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: Colors.green),
-                  ),
-                  suffixIcon: IconButton(
+                decoration: _decoration(
+                  label: 'Nhập lại mật khẩu',
+                  isValid: rePasswordController.text == passwordController.text,
+                  suffix: IconButton(
                     icon: Icon(
-                      _obscureRePassword ? Icons.visibility_off : Icons.visibility,
+                      _obscureRePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
                       color: Colors.grey,
                     ),
-                    onPressed: () {
-                      setState(() {
-                        _obscureRePassword = !_obscureRePassword;
-                      });
-                    },
+                    onPressed: () => setState(
+                        () => _obscureRePassword = !_obscureRePassword),
                   ),
                 ),
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 32),
+
+              // ─── Submit Button ───────────────────────────────────────────────
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: () {
-                    if (!_isEmailValid) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Vui lòng nhập email hợp lệ")),
-                      );
-                      return;
-                    }
-                    if (!_isPhoneValid) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text("Số điện thoại không hợp lệ (10 số)")),
-                        );
-                        return;
-                    }
-                    if (addressController.text.trim().isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Vui lòng nhập địa chỉ")),
-                      );
-                      return;
-                    }
-
-                    if (selectedBirthday == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Vui lòng chọn ngày sinh")),
-                      );
-                      return;
-                    }
-
-                    if (passwordController.text.length < 6) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Mật khẩu phải có ít nhất 6 ký tự")),
-                      );
-                      return;
-                    }
-
-                    if (passwordController.text != repasswordController.text) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Mật khẩu không khớp!")),
-                      );
-                      return;
-                    }
-
-                    insertData(
-                      nameController.text,
-                      emailController.text,
-                      passwordController.text,
-                      repasswordController.text,
-                      phoneController.text,
-                    );
-                  },
+                  onPressed: _isSubmitting ? null : _submit,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
+                    backgroundColor: AppColors.primary,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: Text(
-                    "Đăng Ký",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text(
+                          'Đăng ký',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Colors.white,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 20),
+
+              // ─── Switch to Login ─────────────────────────────────────────────
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text("Bạn đã có tài khoản? "),
+                  const Text('Bạn đã có tài khoản?'),
                   TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => LoginScreen()),
-                      );
-                    },
-                    child: Text(
-                      "Đăng Nhập",
+                    onPressed: () => Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const LoginScreenRedesigned(),
+                      ),
+                    ),
+                    child: const Text(
+                      'Đăng nhập',
                       style: TextStyle(
-                        color: Colors.green,
+                        color: AppColors.primary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                 ],
-              ),
+              )
             ],
           ),
         ),
@@ -395,112 +377,15 @@ class _MongoDbInsertState extends State<MongoDbInsert> {
     );
   }
 
-  // Trong Register.dart
-Future<bool> _checkEmailExists(String email) async {
-  try {
-    // Đảm bảo MongoDatabase.connect() đã được gọi ở đâu đó trước đó, ví dụ trong main.dart
-    if (MongoDatabase.userCollection == null) {
-      print("Lỗi: userCollection chưa được khởi tạo. Hãy gọi MongoDatabase.connect() trước.");
-      // Có thể throw lỗi hoặc xử lý theo cách phù hợp
-      return true; // Tạm thời trả về true để ngăn đăng ký nếu có lỗi nghiêm trọng
-    }
-    var result = await MongoDatabase.userCollection.findOne({"Email": email}); // Sử dụng "Email" giống như trong Mongodbmodel
-    return result != null;
-  } catch (e) {
-    print("Error checking email: $e");
-    // Trong trường hợp lỗi, có thể coi như email tồn tại để tránh đăng ký trùng
-    return true; // Hoặc false tùy theo logic bạn muốn khi có lỗi
-  }
-}
-
-  Future<void> insertData(
-    String name,
-    String email,
-    String password,
-    String rePassword,
-    String phone,
-  ) async {
-    bool emailExists = await _checkEmailExists(email);
-    if (emailExists) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Email đã được sử dụng!"),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    // Mã hóa mật khẩu trước khi lưu
-    String hashedPassword = PasswordHash.hashPassword(password);
-
-    var id = M.ObjectId();
-    final data = Mongodbmodel(
-      id: id.$oid,
-      name: name,
-      email: email,
-      password: hashedPassword, // Lưu mật khẩu đã mã hóa
-      rePassword: hashedPassword, // Lưu mật khẩu đã mã hóa
-      role: 'user',
-      phone: phone,
-      address: addressController.text.trim(),
-      birthday: selectedBirthday,
-      );
-    
-    try {
-      var result = await MongoDatabase.insert(data);
-      if (result) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Đăng ký thành công!"),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
-        
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => LoginScreen(),
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Đăng ký thất bại, vui lòng thử lại!"),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      print("Error during registration: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Có lỗi xảy ra: $e"),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  void _ClearAll() {
-    nameController.clear();
-    emailController.clear();
-    passwordController.clear();
-    repasswordController.clear();
-    phoneController.clear(); // Clear số điện thoại
-    addressController.clear();
-    selectedBirthday = null;
-  }
-
+  // ──────────────────────────────────────────────────────────────── DISPOSE CTRLS
   @override
   void dispose() {
     nameController.dispose();
     emailController.dispose();
-    passwordController.dispose();
-    repasswordController.dispose();
-    phoneController.dispose(); // Dispose controller số điện thoại
+    phoneController.dispose();
     addressController.dispose();
+    passwordController.dispose();
+    rePasswordController.dispose();
     super.dispose();
   }
 }
