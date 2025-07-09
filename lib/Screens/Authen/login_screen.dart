@@ -1,6 +1,7 @@
 // login_screen_redesigned.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:kfc_seller/Screens/Authen/Google/GoogleSignInService.dart';
 import 'package:kfc_seller/Screens/Authen/Register_screen.dart';
 import 'package:kfc_seller/Screens/Authen/forgot_password_screen.dart';
 import 'package:kfc_seller/Screens/Home/home_screen.dart';
@@ -561,17 +562,86 @@ class _LoginScreenRedesignedState extends State<LoginScreenRedesigned>
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             _buildSocialButton(
+              icon: Icons.g_mobiledata,
+              color: const Color(0xFFDB4437),
+              onPressed: () async {
+  final account = await GoogleSignInService.signInWithGoogle();
+
+  if (account != null) {
+    final email = account.email;
+    final name = account.displayName ?? '';
+    final avatar = account.photoUrl ?? '';
+
+    final userCollection = MongoDatabase.userCollection;
+    final existingUser = await userCollection.findOne({'Email': email});
+
+    if (existingUser == null) {
+      // Tạo user mới nếu chưa tồn tại
+      final newUser = {
+        "Username": name,
+        "Email": email,
+        "Phone": "",
+        "FullName": name,
+        "Password": "", // không để null vì model yêu cầu String
+        "RePassword": "",
+        "Role": "user",
+        "Address": "",
+        "Birthday": null,
+        "Bio": "",
+        "AvatarUrl": avatar,
+        "IsActive": true,
+        "Provider": "google",
+        "LastLoginAt": DateTime.now().toIso8601String(),
+        "CreatedAt": DateTime.now().toIso8601String(),
+        "UpdatedAt": DateTime.now().toIso8601String(),
+      };
+
+      final result = await userCollection.insertOne(newUser);
+      if (!result.isSuccess) {
+        _showSnackBar('Lỗi khi tạo tài khoản Google', AppColors.error);
+        return;
+      }
+    } else {
+      // Nếu đã tồn tại, cập nhật thời gian đăng nhập
+      await userCollection.updateOne(
+        mongo.where.eq('Email', email),
+        mongo.modify.set('LastLoginAt', DateTime.now().toIso8601String()),
+      );
+    }
+
+    // Lấy lại user vừa đăng nhập từ DB
+    final loggedUser = await userCollection.findOne({'Email': email});
+    if (loggedUser == null) {
+      _showSnackBar("Không tìm thấy người dùng sau khi đăng nhập!", AppColors.error);
+      return;
+    }
+
+    final model = Mongodbmodel.fromJson(loggedUser);
+
+    _showSnackBar("Đăng nhập bằng Google thành công!", AppColors.success);
+    await Future.delayed(const Duration(milliseconds: 1500));
+
+    Navigator.pushReplacement(
+      context,
+      _createSlideTransition(HomeScreenRedesigned(
+        userId: mongo.ObjectId.fromHexString(loggedUser['_id'].toHexString()),
+        user: model,
+      )),
+    );
+  } else {
+    _showSnackBar("Đăng nhập Google thất bại", AppColors.error);
+  }
+}
+
+
+  
+            ),
+
+            _buildSocialButton(
               icon: Icons.facebook,
               color: const Color(0xFF4267B2),
               onPressed: () {
                 _showSnackBar("Tính năng Facebook đang phát triển", AppColors.info);
-              },
-            ),
-            _buildSocialButton(
-              icon: Icons.g_mobiledata,
-              color: const Color(0xFFDB4437),
-              onPressed: () {
-                _showSnackBar("Tính năng Google đang phát triển", AppColors.info);
               },
             ),
           ],

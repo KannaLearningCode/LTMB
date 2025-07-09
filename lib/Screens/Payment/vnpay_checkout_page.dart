@@ -72,31 +72,33 @@ class _VNPayCheckoutPageState extends State<VNPayCheckoutPage> {
     return NavigationDecision.navigate;
   }
 
-  Future<void> _startVNPayCheckout() async {
-    try {
-      final total = widget.cartItems.fold<double>(
-        0,
-        (sum, item) => sum + item.price * item.quantity,
-      );
+  // Trong build và controller giữ nguyên
 
-      final orderInfo =
-          'Thanh toan don hang cua ${VNPayService.removeUnicode(widget.user.fullName.toString())}';
+Future<void> _startVNPayCheckout() async {
+  try {
+    final total = widget.cartItems.fold<double>(
+      0,
+      (sum, item) => sum + item.price * item.quantity,
+    );
 
-      final url = await VNPayService.createVNPayPaymentUrl(
-        amount: total,
-        orderInfo: orderInfo,
-      );
+    final orderInfo = 'Thanh toan don hang cua ${VNPayService.removeUnicode(widget.user.fullName ?? '')}';
 
-      if (url != null) {
-        setState(() => checkoutUrl = url);
-        _webViewController.loadRequest(Uri.parse(url));
-      } else {
-        _showError("Không thể tạo liên kết thanh toán VNPay");
-      }
-    } catch (e) {
-      _showError("Lỗi khi khởi tạo thanh toán: $e");
+    final url = await VNPayService.createVNPayPaymentUrl(
+      amount: total,
+      orderInfo: orderInfo,
+    );
+
+    if (url != null) {
+      setState(() => checkoutUrl = url);
+      _webViewController.loadRequest(Uri.parse(url));
+    } else {
+      _showError("Không thể tạo liên kết thanh toán VNPay");
     }
+  } catch (e) {
+    _showError("Lỗi khi khởi tạo thanh toán: $e");
   }
+}
+
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(

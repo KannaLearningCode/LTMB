@@ -735,7 +735,7 @@ class MenuTabRedesignedState extends State<MenuTabRedesigned>
                       children: [
                         Expanded(
                           child: Text(
-                            '${currencyFormatter.format(product.price)}đ',
+                            '${currencyFormatter.format(product.price)}VNĐ',
                             style: const TextStyle(
                               color: AppColors.primary,
                               fontWeight: FontWeight.bold,
@@ -875,7 +875,7 @@ class MenuTabRedesignedState extends State<MenuTabRedesigned>
                     Row(
                       children: [
                         Text(
-                          '${currencyFormatter.format(product.price)}đ',
+                          '${currencyFormatter.format(product.price)}VNĐ',
                           style: const TextStyle(
                             color: AppColors.primary,
                             fontWeight: FontWeight.bold,

@@ -4,7 +4,7 @@ import 'package:kfc_seller/Screens/admin/user_management_screen.dart';
 import 'package:kfc_seller/Screens/admin/category_management_screen.dart';
 import 'package:kfc_seller/Screens/admin/order_management_screen.dart';
 import 'package:kfc_seller/Screens/admin/voucher_management_screen.dart';
-import 'package:kfc_seller/Screens/Authen/login_screen_old.dart';
+import 'package:kfc_seller/Screens/Authen/login_screen.dart';
 
 class AdminScreen extends StatelessWidget {
   const AdminScreen({super.key});
@@ -122,7 +122,7 @@ class AdminScreen extends StatelessWidget {
         Navigator.pushAndRemoveUntil(
           context,
 
-          MaterialPageRoute(builder: (context) => LoginScreen()),
+          MaterialPageRoute(builder: (context) => LoginScreenRedesigned()),
           (route) => false,
         );
       },

@@ -6,6 +6,11 @@
         android:label="kfc_seller"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+
+        <meta-data
+            android:name="com.google.android.gms.client_id"
+            android:value="751601717977-v3mqlbe1lmhgk2je104962u4cu64oqie.apps.googleusercontent.com" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

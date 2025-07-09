@@ -1,6 +1,8 @@
 
 import 'dart:convert';
 
+import 'package:mongo_dart/mongo_dart.dart' as mongo;
+
 Mongodbmodel mongodbmodelFromJson(String str) => Mongodbmodel.fromJson(json.decode(str));
 
 String mongodbmodelToJson(Mongodbmodel data) => json.encode(data.toJson());
@@ -9,8 +11,8 @@ class Mongodbmodel {
    String id;
   String name;
   String email;
-  String password;
-  String rePassword;
+  String? password;
+  String? rePassword;
   String role;
   String phone;
   String? fullName;
@@ -22,6 +24,7 @@ class Mongodbmodel {
   DateTime? lastLoginAt;
   DateTime createdAt;
   DateTime updatedAt;
+  String? provider;
 
   Mongodbmodel({
     required this.id,
@@ -40,11 +43,12 @@ class Mongodbmodel {
     this.lastLoginAt,
     DateTime? createdAt,
     DateTime? updatedAt,
+    this.provider,
   })  : createdAt = createdAt ?? DateTime.now(),
         updatedAt = updatedAt ?? DateTime.now();
 
   factory Mongodbmodel.fromJson(Map<String, dynamic> json) => Mongodbmodel(
-        id: json["_id"],
+        id: json["_id"] is mongo.ObjectId ? (json["_id"] as mongo.ObjectId).toHexString() : json["_id"].toString(),
         name: json["Username"] ?? "",
         email: json["Email"] ?? "",
         password: json["Password"] ?? "",
@@ -67,6 +71,7 @@ class Mongodbmodel {
         updatedAt: json["UpdatedAt"] != null
             ? DateTime.parse(json["UpdatedAt"])
             : DateTime.now(),
+        provider: json["Provider"],
       );
 
   Map<String, dynamic> toJson() => {
@@ -86,5 +91,6 @@ class Mongodbmodel {
         "LastLoginAt": lastLoginAt?.toIso8601String(),
         "CreatedAt": createdAt.toIso8601String(),
         "UpdatedAt": updatedAt.toIso8601String(),
+        "Provider": provider,
       };
 }

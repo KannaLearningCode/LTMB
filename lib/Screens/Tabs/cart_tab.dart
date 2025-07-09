@@ -310,6 +310,7 @@ class _CartTabRedesignedState extends State<CartTabRedesigned>
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
+                                    // Tên sản phẩm
                                     Text(
                                       item.productName,
                                       style: const TextStyle(
@@ -321,6 +322,8 @@ class _CartTabRedesignedState extends State<CartTabRedesigned>
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                     const SizedBox(height: 4),
+
+                                    // Mô tả sản phẩm
                                     Text(
                                       item.description ?? 'Sản phẩm ngon',
                                       style: const TextStyle(
@@ -331,20 +334,22 @@ class _CartTabRedesignedState extends State<CartTabRedesigned>
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                     const SizedBox(height: 12),
-                                    
-                                    // Price and quantity controls
+
+                                    // Dòng giá sản phẩm
+                                    Text(
+                                      '${currencyFormatter.format(item.price)} VNĐ',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+
+                                    // Dòng số lượng + thùng rác
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Text(
-                                          '${currencyFormatter.format(item.price)}đ',
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.primary,
-                                          ),
-                                        ),
-                                        
                                         // Quantity controls
                                         Container(
                                           decoration: BoxDecoration(
@@ -372,7 +377,8 @@ class _CartTabRedesignedState extends State<CartTabRedesigned>
                                                 ),
                                               ),
                                               Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                                width: 50,
+                                                alignment: Alignment.center,
                                                 child: Text(
                                                   '${item.quantity}',
                                                   style: const TextStyle(
@@ -402,23 +408,23 @@ class _CartTabRedesignedState extends State<CartTabRedesigned>
                                             ],
                                           ),
                                         ),
+
+                                        // Delete button
+                                        IconButton(
+                                          onPressed: () {
+                                            HapticFeedback.mediumImpact();
+                                            _safeCartOperation(() {
+                                              cart.removeItem(item.productId);
+                                            });
+                                          },
+                                          icon: const Icon(
+                                            Icons.delete,
+                                            color: Colors.red,
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ],
-                                ),
-                              ),
-                              
-                              // Remove button
-                              IconButton(
-                                onPressed: () {
-                                  HapticFeedback.lightImpact();
-                                  _safeCartOperation(() {
-                                    cart.removeItem(item.productId);
-                                  });
-                                },
-                                icon: const Icon(
-                                  Icons.delete_outline,
-                                  color: AppColors.error,
                                 ),
                               ),
                             ],

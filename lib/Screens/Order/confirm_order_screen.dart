@@ -8,13 +8,16 @@ import 'package:kfc_seller/Models/order.dart';
 import 'package:kfc_seller/Screens/Cart/cart_provider.dart';
 import 'package:kfc_seller/Screens/Order/order_service.dart';
 import 'package:kfc_seller/Screens/Order/order_success_page.dart';
+import 'package:kfc_seller/Screens/Payment/creditcard_checkout_page.dart';
 import 'package:kfc_seller/Screens/Payment/paypal_checkout_page.dart';
+import 'package:kfc_seller/Screens/Payment/qrcode_payment_page.dart';
+import 'package:kfc_seller/Screens/QRCode/QRService.dart';
 import 'package:kfc_seller/Screens/Voucher/VoucherService.dart';
+import 'package:kfc_seller/VNPay/VNPayService.dart';
 import 'package:kfc_seller/theme/app_theme.dart';
 import 'package:provider/provider.dart';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
 import 'package:kfc_seller/Models/Mongdbmodel.dart';
-import 'package:kfc_seller/VNPay/vnpay_helper.dart';
 import 'package:kfc_seller/VNPay/vnpay_webview_page.dart';
 
 class ConfirmOrderScreenRedesigned extends StatefulWidget {
@@ -1044,8 +1047,9 @@ Widget _buildOrderItems(CartProvider cart) {
               _buildPaymentMethodCard('COD', Icons.inventory, 'Tiền mặt'),
               _buildPaymentMethodCard('MoMo', 'momo', 'MoMo'),
               _buildPaymentMethodCard('PayPal', 'paypal', 'PayPal'),
-              _buildPaymentMethodCard('Zalopay', 'zalopay', 'ZaloPay'),
+              _buildPaymentMethodCard('QR', 'QR', 'QR'),
               _buildPaymentMethodCard('VNPay', 'vnpay', 'VNPay'),
+              _buildPaymentMethodCard('Thẻ Tín Dụng', 'card', 'Card'),
             ],
           ),
         ],
@@ -1136,7 +1140,7 @@ Widget _buildOrderItems(CartProvider cart) {
           HapticFeedback.mediumImpact();
           
           // Giữ nguyên toàn bộ logic xử lý thanh toán từ code cũ
-          if (selectedPayment != 'PayPal' && selectedPayment != 'VNPay' && selectedPayment != 'COD') {
+          if (selectedPayment != 'PayPal' && selectedPayment != 'VNPay' && selectedPayment != 'COD'&& selectedPayment != 'Card' && selectedPayment != 'QR') {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: const Text('🔧 Chức năng đang phát triển. Vui lòng chọn phương thức khác!'),
@@ -1231,95 +1235,244 @@ Widget _buildOrderItems(CartProvider cart) {
               ),
             );
           }
-          else if (selectedPayment == 'VNPay') {
-            final url = createVNPayUrl(
-              tmnCode: 'ZB2CAHDR',
-              hashKey: 'QBMWNZ5XHK2NGARCY75SQEHG0B5NYPQZ',
-              amount: cart.totalPrice + shippingFee - discountAmount,
-              orderInfo: 'Thanh toan don hang cua ${receiverName ?? "Khach hang"}',
-              returnUrl: 'https://sandbox.vnpayment.vn/return',
-            );
-            
-            await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => VNPayWebViewPage(
-                  paymentUrl: url,
-                  returnUrl: 'https://sandbox.vnpayment.vn/return',
-                  onFinish: (returnUrl) async {
-                    final uri = Uri.parse(returnUrl);
-                    final responseCode = uri.queryParameters['vnp_ResponseCode'];
-                    final txnRef = uri.queryParameters['vnp_TxnRef'] ?? '';
+          else if (selectedPayment == 'QR') {
+  final now = DateTime.now();
+  final mongo.ObjectId orderId = mongo.ObjectId();
 
-                    if (responseCode == '00') {
-                      try {
-                        final now = DateTime.now();
-                        final mongo.ObjectId newOrderId = mongo.ObjectId();
-                        final orderItems = cart.items.asMap().entries.map((entry) {
-                          final i = entry.key;
-                          final item = entry.value;
-                          return OrderItem(
-                            id: i + 1,
-                            orderId: newOrderId,
-                            productId: item.productId,
-                            quantity: item.quantity,
-                            price: item.price,
-                            productName: item.productName,
-                            productImage: item.productImage,
-                          );
-                        }).toList();
+  final orderItems = cart.items.asMap().entries.map((entry) {
+    final i = entry.key;
+    final item = entry.value;
+    return OrderItem(
+      id: i + 1,
+      orderId: orderId,
+      productId: item.productId,
+      quantity: item.quantity,
+      price: item.price,
+      productName: item.productName,
+      productImage: item.productImage,
+    );
+  }).toList();
 
-                        final newOrder = Order(
-                          id: newOrderId,
-                          userId: widget.userId,
-                          items: orderItems,
-                          totalAmount: cart.totalPrice + shippingFee - discountAmount,
-                          paymentMethod: 'VNPay',
-                          paymentStatus: 'Đã thanh toán',
-                          shippingAddress: receiverAddress ?? '',
-                          billingAddress: receiverAddress ?? '',
-                          phone: receiverPhone ?? '',
-                          createdAt: now,
-                          updatedAt: now,
-                        );
+  final totalAmount = (cart.totalPrice + shippingFee - discountAmount).toInt();
 
-                        await OrderService.insertOrder(newOrder);
-                        cart.clearCart();
+  final order = Order(
+    id: orderId,
+    userId: widget.userId,
+    items: orderItems,
+    totalAmount: totalAmount.toDouble(),
+    paymentMethod: 'QR',
+    paymentStatus: 'Đã thanh toán',
+    shippingAddress: receiverAddress ?? '',
+    billingAddress: receiverAddress ?? '',
+    phone: receiverPhone ?? '',
+    createdAt: now,
+    updatedAt: now,
+  );
 
-                        if (context.mounted) {
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => OrderSuccessPageRedesigned(
-                                paymentId: txnRef,
-                                paymentMethod: 'VNPay',
-                                receiverName: receiverName ?? '',
-                                receiverPhone: receiverPhone ?? '',
-                                receiverAddress: receiverAddress ?? '',
-                                user: widget.user,
-                                userId: widget.userId,
-                              ),
-                            ),
-                            (route) => false,
-                          );
-                        }
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Lỗi lưu đơn hàng: ${e.toString()}')),
-                          );
-                        }
-                      }
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Thanh toán thất bại hoặc bị hủy!')),
-                      );
-                    }
-                  },
+  // ✅ Dùng QRService để tạo dữ liệu QR
+  final qrContent = 'Thanh toan don ${orderId.toHexString()}';
+  final qrImageUrl = QRService.generateQRImageUrl(
+    amount: totalAmount,
+    content: qrContent,
+  );
+  final bankInfoText = QRService.generateBankInfoText(
+    amount: totalAmount,
+    content: qrContent,
+  );
+
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => QRCodePaymentPage(
+        qrImageUrl: qrImageUrl,
+        bankInfoText: bankInfoText,
+        onFinish: (paymentId) async {
+          try {
+            await OrderService.insertOrder(order);
+            cart.clearCart();
+
+            if (context.mounted) {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => OrderSuccessPageRedesigned(
+                    paymentId: paymentId,
+                    paymentMethod: 'QR',
+                    receiverName: receiverName ?? '',
+                    receiverPhone: receiverPhone ?? '',
+                    receiverAddress: receiverAddress ?? '',
+                    user: widget.user,
+                    userId: widget.userId,
+                  ),
                 ),
-              ),
+                (route) => false,
+              );
+            }
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Lỗi lưu đơn hàng: ${e.toString()}')),
+              );
+            }
+          }
+        },
+      ),
+    ),
+  );
+}
+
+
+          else if (selectedPayment == 'Card') {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => CreditCardCheckoutPage(
+        cartItems: cart.items,
+        paymentMethod: 'Card',
+        receiverName: receiverName ?? '',
+        receiverPhone: receiverPhone ?? '',
+        receiverAddress: receiverAddress ?? '',
+        user: widget.user,
+        userId: widget.userId,
+        discountAmount: discountAmount,
+        onFinish: (paymentId) async {
+          try {
+            await OrderService.insertOrder(order);
+            cart.clearCart();
+
+            if (context.mounted) {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => OrderSuccessPageRedesigned(
+                    paymentId: paymentId,
+                    paymentMethod: 'Card',
+                    receiverName: receiverName ?? '',
+                    receiverPhone: receiverPhone ?? '',
+                    receiverAddress: receiverAddress ?? '',
+                    user: widget.user,
+                    userId: widget.userId,
+                  ),
+                ),
+                (route) => false,
+              );
+            }
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Lỗi lưu đơn hàng: ${e.toString()}')),
+              );
+            }
+          }
+        },
+      ),
+    ),
+  );
+}
+
+          else if (selectedPayment == 'VNPay') {
+  final orderInfo = 'Thanh toan don hang cua ${VNPayService.removeUnicode(receiverName ?? "Khach hang")}';
+
+  final paymentUrl = await VNPayService.createVNPayPaymentUrl(
+    amount: cart.totalPrice + shippingFee - discountAmount,
+    orderInfo: orderInfo,
+  );
+
+  if (paymentUrl == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Không thể tạo liên kết thanh toán VNPay.')),
+    );
+    return;
+  }
+
+  await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => VNPayWebViewPage(
+        paymentUrl: paymentUrl,
+        returnUrl: 'https://sandbox.vnpayment.vn/return',
+        onFinish: (returnUrl) async {
+          final uri = Uri.parse(returnUrl);
+          final responseCode = uri.queryParameters['vnp_ResponseCode'];
+          final txnRef = uri.queryParameters['vnp_TxnRef'] ?? '';
+          final isValid = VNPayService.verifyReturnUrlSignature(uri);
+          if (!isValid) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('❌ Chữ ký VNPay không hợp lệ!')),
+    );
+    return;
+  }
+          if (responseCode == '00') {
+            try {
+              final now = DateTime.now();
+              final mongo.ObjectId newOrderId = mongo.ObjectId();
+
+              final orderItems = cart.items.asMap().entries.map((entry) {
+                final i = entry.key;
+                final item = entry.value;
+                return OrderItem(
+                  id: i + 1,
+                  orderId: newOrderId,
+                  productId: item.productId,
+                  quantity: item.quantity,
+                  price: item.price,
+                  productName: item.productName,
+                  productImage: item.productImage,
+                );
+              }).toList();
+
+              final newOrder = Order(
+                id: newOrderId,
+                userId: widget.userId,
+                items: orderItems,
+                totalAmount: cart.totalPrice + shippingFee - discountAmount,
+                paymentMethod: 'VNPay',
+                paymentStatus: 'Đã thanh toán',
+                shippingAddress: receiverAddress ?? '',
+                billingAddress: receiverAddress ?? '',
+                phone: receiverPhone ?? '',
+                createdAt: now,
+                updatedAt: now,
+              );
+
+              await OrderService.insertOrder(newOrder);
+              cart.clearCart();
+
+              if (context.mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => OrderSuccessPageRedesigned(
+                      paymentId: txnRef,
+                      paymentMethod: 'VNPay',
+                      receiverName: receiverName ?? '',
+                      receiverPhone: receiverPhone ?? '',
+                      receiverAddress: receiverAddress ?? '',
+                      user: widget.user,
+                      userId: widget.userId,
+                    ),
+                  ),
+                  (route) => false,
+                );
+              }
+            } catch (e) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Lỗi lưu đơn hàng: ${e.toString()}')),
+                );
+              }
+            }
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Thanh toán thất bại hoặc bị hủy!')),
             );
           }
+        },
+      ),
+    ),
+  );
+}
+
           else {
             // COD và các phương thức khác
             try {
@@ -1360,7 +1513,7 @@ Widget _buildOrderItems(CartProvider cart) {
           ),
         ),
         child: Text(
-          'Thanh toán ${currency.format(total)}đ',
+          'Thanh toán ${currency.format(total)}VNĐ',
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,

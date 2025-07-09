@@ -759,7 +759,7 @@ class _HomeTabRedesignedState extends State<HomeTabRedesigned>
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      '${currencyFormatter.format(product.price)}đ',
+                                      '${currencyFormatter.format(product.price)}VNĐ',
                                       style: const TextStyle(
                                         color: AppColors.primary,
                                         fontWeight: FontWeight.bold,

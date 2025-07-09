@@ -441,7 +441,7 @@ class _DetailProductPageRedesignedState extends State<DetailProductPageRedesigne
                                         ),
                                       ),
                                       Text(
-                                        '${currencyFormatter.format(widget.product.price)}đ',
+                                        '${currencyFormatter.format(widget.product.price)}VNĐ',
                                         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                                           color: AppColors.primary,
                                           fontWeight: FontWeight.bold,
