@@ -69,21 +69,32 @@ class _MongoDbInsertState extends State<MongoDbInsert> {
   // ──────────────────────────────────────────────────────────────── SUBMIT HANDLER
   Future<void> _submit() async {
     // 1. Validate local
-    if (!_isNameValid ||
-        !_isEmailValid ||
-        !_isPhoneValid ||
-        addressController.text.trim().isEmpty ||
-        selectedBirthday == null ||
-        passwordController.text.length < 6 ||
-        passwordController.text != rePasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vui lòng kiểm tra lại thông tin'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
-    }
+    String? error;
+      if (!_isNameValid) {
+        error = 'Tên phải dài hơn 3 ký tự';
+      } else if (!_isEmailValid) {
+        error = 'Email không hợp lệ';
+      } else if (!_isPhoneValid) {
+        error = 'Số điện thoại không hợp lệ (10 chữ số)';
+      } else if (addressController.text.trim().isEmpty) {
+        error = 'Địa chỉ không được để trống';
+      } else if (selectedBirthday == null) {
+        error = 'Vui lòng chọn ngày sinh';
+      } else if (passwordController.text.length < 6) {
+        error = 'Mật khẩu phải có ít nhất 6 ký tự';
+      } else if (passwordController.text != rePasswordController.text) {
+        error = 'Mật khẩu nhập lại không khớp';
+      }
+
+      if (error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
 
     setState(() => _isSubmitting = true);
 

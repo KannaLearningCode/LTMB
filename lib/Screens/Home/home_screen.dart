@@ -193,7 +193,7 @@ class _HomeScreenRedesignedState extends State<HomeScreenRedesigned>
       userId: widget.userId,
       onGoToMenuTab: () => _onItemTapped(1),
     ),
-    const MoreTabRedesigned(),
+    MoreTabRedesigned(currentUser: widget.user,),
   ];
 
   // SỬA: Safe navigation helper

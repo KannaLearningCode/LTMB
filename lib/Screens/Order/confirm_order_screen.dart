@@ -1140,7 +1140,7 @@ Widget _buildOrderItems(CartProvider cart) {
           HapticFeedback.mediumImpact();
           
           // Giữ nguyên toàn bộ logic xử lý thanh toán từ code cũ
-          if (selectedPayment != 'PayPal' && selectedPayment != 'VNPay' && selectedPayment != 'COD'&& selectedPayment != 'Card' && selectedPayment != 'QR') {
+          if (selectedPayment != 'PayPal' && selectedPayment != 'VNPay' && selectedPayment != 'COD' && selectedPayment != 'QR') {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: const Text('🔧 Chức năng đang phát triển. Vui lòng chọn phương thức khác!'),

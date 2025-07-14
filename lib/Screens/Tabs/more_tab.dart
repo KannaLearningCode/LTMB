@@ -1,11 +1,20 @@
 // lib/Screens/Tabs/more_tab_redesigned.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:kfc_seller/Models/Mongdbmodel.dart';
+import 'package:kfc_seller/Screens/More/order_history_page.dart';
 import 'package:kfc_seller/Theme/app_theme.dart';
+import 'package:mongo_dart/mongo_dart.dart' as mongo;
 
-class MoreTabRedesigned extends StatelessWidget {
-  const MoreTabRedesigned({super.key});
+class MoreTabRedesigned extends StatefulWidget {
+  final Mongodbmodel currentUser;
+  const MoreTabRedesigned({super.key, required this.currentUser});
 
+  @override
+  State<MoreTabRedesigned> createState() => _MoreTabRedesignedState();
+}
+
+class _MoreTabRedesignedState extends State<MoreTabRedesigned> {
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -14,18 +23,10 @@ class MoreTabRedesigned extends StatelessWidget {
         child: Column(
           children: [
             const SizedBox(height: 20),
-            
-            // User section
             _buildUserSection(),
-            
             const SizedBox(height: 20),
-            
-            // Menu items
             _buildMenuItems(context),
-            
             const SizedBox(height: 20),
-            
-            // App info
             _buildAppInfo(),
           ],
         ),
@@ -277,16 +278,33 @@ class MoreTabRedesigned extends StatelessWidget {
   }
 
   void _handleMenuTap(BuildContext context, String title) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Tính năng "$title" đang được phát triển'),
-        backgroundColor: AppColors.info,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
+    switch (title) {
+      case 'Lịch sử đơn hàng':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OrderHistoryPage(
+              userId: mongo.ObjectId.parse(widget.currentUser.id),
+            ),
+          ),
+        ).then((_) {
+          // Refresh lại UI nếu cần
+          setState(() {});
+        });
+        break;
+
+      default:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Tính năng "$title" đang được phát triển'),
+            backgroundColor: AppColors.info,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+    }
   }
 }

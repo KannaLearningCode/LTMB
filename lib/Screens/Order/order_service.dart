@@ -60,5 +60,18 @@ class OrderService {
   }
 }
 
+static Future<List<Order>> getOrdersByUserId(mongo.ObjectId userId) async {
+  final db = await Db.create(MONGO_CONN_URL);
+  await db.open();
+
+  final ordersCollection = db.collection(ORDER_COLLECTION);
+  final orderMaps = await ordersCollection.find({'userId': userId}).toList();
+
+  await db.close();
+
+  return orderMaps.map((e) => Order.fromJson(e)).toList();
+}
+
+
 
 }
