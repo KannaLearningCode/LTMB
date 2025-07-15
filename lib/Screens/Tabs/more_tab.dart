@@ -2,7 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kfc_seller/Models/Mongdbmodel.dart';
-import 'package:kfc_seller/Screens/More/order_history_page.dart';
+import 'package:kfc_seller/Screens/More/Favorite/favorite_page.dart';
+import 'package:kfc_seller/Screens/More/OrderHistory/order_history_page.dart';
 import 'package:kfc_seller/Theme/app_theme.dart';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
 
@@ -292,6 +293,14 @@ class _MoreTabRedesignedState extends State<MoreTabRedesigned> {
           setState(() {});
         });
         break;
+case 'Món ăn yêu thích':
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => FavoritePage(currentUser: widget.currentUser),
+    ),
+  );
+  break;
 
       default:
         ScaffoldMessenger.of(context).showSnackBar(

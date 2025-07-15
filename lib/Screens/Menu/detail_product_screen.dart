@@ -6,6 +6,7 @@ import 'package:kfc_seller/Models/cart.dart';
 import 'package:kfc_seller/Models/product.dart';
 import 'package:kfc_seller/Screens/Cart/cart_provider.dart';
 import 'package:kfc_seller/Screens/Home/home_screen.dart';
+import 'package:kfc_seller/Screens/More/Favorite/favorite_service.dart';
 import 'package:kfc_seller/Theme/app_theme.dart';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
 import 'package:provider/provider.dart';
@@ -33,7 +34,8 @@ class _DetailProductPageRedesignedState extends State<DetailProductPageRedesigne
   int quantity = 1;
   int _selectedIndex = 1;
   bool _isLoading = false;
-  
+  bool _isFavorite = false;
+
   late AnimationController _imageAnimationController;
   late AnimationController _contentAnimationController;
   late Animation<double> _imageScaleAnimation;
@@ -43,6 +45,10 @@ class _DetailProductPageRedesignedState extends State<DetailProductPageRedesigne
   void initState() {
     super.initState();
     
+    FavoriteService.isFavorite(widget.userId, widget.product.id).then((value) {
+      setState(() => _isFavorite = value);
+    });
+
     _imageAnimationController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -88,6 +94,22 @@ class _DetailProductPageRedesignedState extends State<DetailProductPageRedesigne
     _contentAnimationController.dispose();
     super.dispose();
   }
+void _toggleFavorite() async {
+  HapticFeedback.lightImpact();
+  setState(() => _isFavorite = !_isFavorite);
+
+  if (_isFavorite) {
+    await FavoriteService.addFavorite(widget.userId, widget.product.id);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Đã thêm vào yêu thích')),
+    );
+  } else {
+    await FavoriteService.removeFavorite(widget.userId, widget.product.id);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Đã xóa khỏi yêu thích')),
+    );
+  }
+}
 
   void _onItemTapped(int index) {
     setState(() => _selectedIndex = index);
@@ -231,7 +253,22 @@ class _DetailProductPageRedesignedState extends State<DetailProductPageRedesigne
                       ),
                     ),
                     actions: [
-                      // Cart badge
+                      // Favorite button
+                      Container(
+                        margin: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.9),
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          icon: Icon(
+                            _isFavorite ? Icons.favorite : Icons.favorite_border,
+                            color: _isFavorite ? Colors.red : AppColors.primary,
+                          ),
+                          onPressed: _toggleFavorite,
+                        ),
+                      ),
+                      // Cart button
                       Container(
                         margin: const EdgeInsets.all(8),
                         child: Stack(
@@ -274,20 +311,6 @@ class _DetailProductPageRedesignedState extends State<DetailProductPageRedesigne
                           ],
                         ),
                       ),
-                      Container(
-                        margin: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.9),
-                          shape: BoxShape.circle,
-                        ),
-                        child: IconButton(
-                          icon: const Icon(Icons.favorite_border, color: AppColors.primary),
-                          onPressed: () {
-                            HapticFeedback.lightImpact();
-                            // Add to favorites logic
-                          },
-                        ),
-                      ),
                     ],
                     flexibleSpace: FlexibleSpaceBar(
                       background: AnimatedBuilder(
@@ -312,7 +335,6 @@ class _DetailProductPageRedesignedState extends State<DetailProductPageRedesigne
                                     ),
                                   ),
                                 ),
-                                // Gradient overlay
                                 Container(
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
@@ -325,7 +347,6 @@ class _DetailProductPageRedesignedState extends State<DetailProductPageRedesigne
                                     ),
                                   ),
                                 ),
-                                // Availability badge
                                 if (!widget.product.isAvailable)
                                   Positioned(
                                     bottom: 16,
@@ -352,7 +373,7 @@ class _DetailProductPageRedesignedState extends State<DetailProductPageRedesigne
                       ),
                     ),
                   ),
-                  
+
                   // Product content
                   SliverToBoxAdapter(
                     child: AnimatedBuilder(

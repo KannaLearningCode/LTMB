@@ -4,7 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:kfc_seller/Models/Mongdbmodel.dart';
 import 'package:kfc_seller/Screens/Authen/login_screen.dart';
 import 'package:kfc_seller/Screens/Home/home_screen.dart';
-import 'package:kfc_seller/Screens/More/order_history_page.dart';
+import 'package:kfc_seller/Screens/More/Favorite/favorite_page.dart';
+import 'package:kfc_seller/Screens/More/OrderHistory/order_history_page.dart';
 import 'package:kfc_seller/Screens/Order/order_service.dart';
 import 'package:kfc_seller/Theme/app_theme.dart';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
@@ -632,16 +633,20 @@ class _ProfileScreenRedesignedState extends State<ProfileScreenRedesigned>
         _showProfileInfoDialog();
         break;
       case 'orders':
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => OrderHistoryPage(userId: widget.userId),
-    ),
-  );
-  break;
-
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OrderHistoryPage(userId: widget.userId),
+          ),
+        );
+        break;
       case 'favorites':
-        _showFavorites();
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => FavoritePage(currentUser: widget.user),
+          ),
+        );
         break;
       case 'addresses':
         _showAddresses();
