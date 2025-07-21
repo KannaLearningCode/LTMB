@@ -44,7 +44,7 @@ class _DetailProductPageRedesignedState extends State<DetailProductPageRedesigne
   late Animation<double> _imageScaleAnimation;
   late Animation<double> _contentSlideAnimation;
 
-  List<Review> _reviews = [];
+  List<Map<String, dynamic>> _reviews = [];
   double _averageRating = 0.0;
   final _commentController = TextEditingController();
   int _selectedStars = 5;
@@ -122,25 +122,31 @@ void _toggleFavorite() async {
   }
 }
 
+
 Future<void> _loadReviews() async {
   final reviews = await ReviewService.getReviewsByProductId(widget.product.id);
-  double avg = 0;
+  List<Map<String, dynamic>> combined = [];
+
+  double totalRating = 0;
 
   for (var review in reviews) {
     final user = await UserService.getUserById(review.userId);
-    review.userName = user?.name ?? 'Người dùng';
-    review.userAvatar = user?.avatarUrl ?? '';
-  }
 
-  if (reviews.isNotEmpty) {
-    avg = reviews.map((r) => r.rating).reduce((a, b) => a + b) / reviews.length;
+    totalRating += review.rating;
+
+    combined.add({
+      'review': review,
+      'user': user,
+    });
   }
 
   setState(() {
-    _reviews = reviews;
-    _averageRating = avg;
+    _reviews = combined;
+    _averageRating = reviews.isNotEmpty ? totalRating / reviews.length : 0.0;
   });
 }
+
+
 
 
   void _onItemTapped(int index) {
@@ -893,6 +899,8 @@ Future<void> _loadReviews() async {
               images: [],
               createdAt: DateTime.now(),
               updatedAt: DateTime.now(),
+              userName: widget.user.name, // gắn tên user hiện tại
+              userAvatar: widget.user.avatarUrl, // gắn avatar user hiện tại
             );
 
             await ReviewService.submitReview(review);
@@ -910,38 +918,48 @@ Future<void> _loadReviews() async {
     );
   }
 
-  Widget _buildReviewList() {
-    if (_reviews.isEmpty) return const Text('Chưa có đánh giá nào.');
+    Widget _buildReviewList() {
+  if (_reviews.isEmpty) return const Text('Chưa có đánh giá nào.');
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: _reviews.map((review) {
-        return ListTile(
-          leading: CircleAvatar(
-            backgroundImage: review.userAvatar != null && review.userAvatar!.isNotEmpty
-                ? NetworkImage(review.userAvatar!)
-                : const AssetImage('assets/images/profile.png') as ImageProvider,
-          ),
-          title: Text(review.userName ?? 'Người dùng'),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: List.generate(5, (index) {
-                  return Icon(
-                    index < review.rating ? Icons.star : Icons.star_border,
-                    color: Colors.amber,
-                    size: 16,
-                  );
-                }),
-              ),
-              const SizedBox(height: 4),
-              Text(review.comment),
-            ],
-          ),
-        );
-      }).toList(),
-    );
-  }
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: _reviews.map((reviewData) {
+      final Review review = reviewData['review'];
+      final Mongodbmodel? user = reviewData['user'];
+
+      final avatarUrl = user?.avatarUrl?.isNotEmpty == true
+          ? user!.avatarUrl
+          : review.userAvatar;
+      final userName = user?.name?.isNotEmpty == true
+          ? user!.name
+          : review.userName ?? 'Người dùng';
+
+      return ListTile(
+        leading: CircleAvatar(
+          backgroundImage: (avatarUrl != null && avatarUrl.isNotEmpty)
+              ? NetworkImage(avatarUrl)
+              : const AssetImage('assets/images/profile.png') as ImageProvider,
+        ),
+        title: Text(userName),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: List.generate(5, (index) {
+                return Icon(
+                  index < review.rating ? Icons.star : Icons.star_border,
+                  color: Colors.amber,
+                  size: 16,
+                );
+              }),
+            ),
+            const SizedBox(height: 4),
+            Text(review.comment),
+          ],
+        ),
+      );
+    }).toList(),
+  );
+}
 
 }

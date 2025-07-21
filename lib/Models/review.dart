@@ -40,6 +40,8 @@ class Review {
       updatedAt: json['updatedAt'] is DateTime
           ? json['updatedAt']
           : DateTime.parse(json['updatedAt']),
+      userName: json['userName'] as String?,       // thêm dòng này
+      userAvatar: json['userAvatar'] as String?,
     );
   }
 
@@ -53,6 +55,8 @@ class Review {
       'images': images,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
+      if (userName != null) 'userName': userName,
+      if (userAvatar != null) 'userAvatar': userAvatar,
     };
   }
 } 
