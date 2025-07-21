@@ -10,6 +10,9 @@ class Review {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  String? userName;
+  String? userAvatar;
+
   Review({
     required this.id,
     required this.userId,
@@ -19,18 +22,24 @@ class Review {
     required this.images,
     required this.createdAt,
     required this.updatedAt,
+    this.userName,
+    this.userAvatar,
   });
 
   factory Review.fromJson(Map<String, dynamic> json) {
     return Review(
-      id: json['_id'],
-      userId: json['userId'],
-      productId: json['productId'],
-      rating: json['rating'],
-      comment: json['comment'],
+      id: json['_id'] as ObjectId,
+      userId: json['userId'] as ObjectId,
+      productId: json['productId'] as ObjectId,
+      rating: json['rating'] is int ? json['rating'] : int.parse(json['rating'].toString()),
+      comment: json['comment'] ?? '',
       images: List<String>.from(json['images'] ?? []),
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
+      createdAt: json['createdAt'] is DateTime
+          ? json['createdAt']
+          : DateTime.parse(json['createdAt']),
+      updatedAt: json['updatedAt'] is DateTime
+          ? json['updatedAt']
+          : DateTime.parse(json['updatedAt']),
     );
   }
 
@@ -42,8 +51,8 @@ class Review {
       'rating': rating,
       'comment': comment,
       'images': images,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
     };
   }
 } 

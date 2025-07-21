@@ -6,6 +6,7 @@ import 'package:kfc_seller/Models/Coupon.dart';
 import 'package:kfc_seller/Models/cart.dart';
 import 'package:kfc_seller/Models/order.dart';
 import 'package:kfc_seller/Screens/Cart/cart_provider.dart';
+import 'package:kfc_seller/Screens/Home/location_service.dart';
 import 'package:kfc_seller/Screens/Order/order_service.dart';
 import 'package:kfc_seller/Screens/Order/order_success_page.dart';
 import 'package:kfc_seller/Screens/Payment/creditcard_checkout_page.dart';
@@ -19,6 +20,7 @@ import 'package:provider/provider.dart';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
 import 'package:kfc_seller/Models/Mongdbmodel.dart';
 import 'package:kfc_seller/VNPay/vnpay_webview_page.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ConfirmOrderScreenRedesigned extends StatefulWidget {
   final Mongodbmodel user;
@@ -55,6 +57,8 @@ class _ConfirmOrderScreenRedesignedState extends State<ConfirmOrderScreenRedesig
   String? receiverName;
   String? receiverPhone;
   String? receiverAddress;
+  double? receiverLatitude;
+  double? receiverLongitude;
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -107,28 +111,52 @@ class _ConfirmOrderScreenRedesignedState extends State<ConfirmOrderScreenRedesig
     final allCoupons = await CouponService.fetchCoupons();
     final now = DateTime.now();
 
-    print('All coupons: ${allCoupons.map((c) => c.code)}');
-    for (var c in allCoupons) {
-      print(
-        '↪️ ${c.code} | active: ${c.isActive} | used: ${c.usedCount}/${c.usageLimit} | expiresAt: ${c.expiresAt}');
-    }
-
-    if (mounted) {
-      setState(() {
-        availableCoupons = allCoupons.where((coupon) =>
-          coupon.isActive &&
-          (coupon.usageLimit == 0 || coupon.usageLimit > coupon.usedCount) &&
-          (coupon.expiresAt == null || coupon.expiresAt!.isAfter(now))
-        ).toList();
-        isLoadingCoupons = false;
-      });
-    }
+    setState(() {
+      availableCoupons = allCoupons.where((coupon) =>
+        coupon.isActive &&
+        (coupon.usageLimit == 0 || coupon.usedCount < coupon.usageLimit) &&
+        (coupon.expiresAt == null || coupon.expiresAt!.isAfter(now))
+      ).toList();
+      
+      // Nếu mã đang áp dụng đã hết lượt
+      if (appliedCoupon != null && 
+          !availableCoupons.any((c) => c.code == appliedCoupon!.code)) {
+        appliedCoupon = null;
+        discountAmount = 0;
+        discountController.clear();
+      }
+      
+      isLoadingCoupons = false;
+    });
   }
+
+  Future<void> _fetchReceiverLocation() async {
+  final coords = await LocationService.getCurrentCoordinates();
+  if (coords != null) {
+    receiverLatitude = coords['latitude'];
+    receiverLongitude = coords['longitude'];
+
+    final address = await LocationService.getAddressFromCoordinates(
+      receiverLatitude!,
+      receiverLongitude!,
+    );
+
+    setState(() {
+      receiverAddress = address;
+    });
+  } else {
+    setState(() {
+      receiverAddress = "Không thể lấy địa chỉ";
+    });
+  }
+}
+
 
   void _showShippingInfoBottomSheet(BuildContext context) {
     final nameController = TextEditingController(text: receiverName);
     final phoneController = TextEditingController(text: receiverPhone);
     final addressController = TextEditingController(text: receiverAddress);
+    bool isPhoneValid = true;
 
     showModalBottomSheet(
       context: context,
@@ -172,9 +200,37 @@ class _ConfirmOrderScreenRedesignedState extends State<ConfirmOrderScreenRedesig
               const SizedBox(height: 20),
               
               _buildInputField(nameController, 'Họ tên người nhận', Icons.person),
+
               const SizedBox(height: 16),
-              _buildInputField(phoneController, 'Số điện thoại', Icons.phone, 
-                  keyboardType: TextInputType.phone),
+
+              Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildInputField(
+                  phoneController, 
+                  'Số điện thoại', 
+                  Icons.phone,
+                  keyboardType: TextInputType.phone,
+                  onChanged: (value) {
+                    setState(() {
+                      isPhoneValid = _isValidPhoneNumber(value) || value.isEmpty;
+                    });
+                  },
+                ),
+                if (!isPhoneValid)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4, left: 8),
+                    child: Text(
+                      'Số điện thoại phải có 10 số và bắt đầu bằng 0',
+                      style: TextStyle(
+                        color: AppColors.error,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+                
               const SizedBox(height: 16),
               _buildInputField(addressController, 'Địa chỉ giao hàng', Icons.location_on),
               
@@ -242,7 +298,7 @@ class _ConfirmOrderScreenRedesignedState extends State<ConfirmOrderScreenRedesig
   }
 
   Widget _buildInputField(TextEditingController controller, String label, IconData icon,
-      {TextInputType? keyboardType}) {
+      {TextInputType? keyboardType, ValueChanged<String>? onChanged,}) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surfaceVariant,
@@ -252,6 +308,7 @@ class _ConfirmOrderScreenRedesignedState extends State<ConfirmOrderScreenRedesig
       child: TextField(
         controller: controller,
         keyboardType: keyboardType,
+        onChanged: onChanged,
         decoration: InputDecoration(
           labelText: label,
           prefixIcon: Icon(icon, color: AppColors.primary),
@@ -370,7 +427,7 @@ class _ConfirmOrderScreenRedesignedState extends State<ConfirmOrderScreenRedesig
         const SizedBox(height: 20),
         
         // Shipping Info
-        _buildShippingInfo(),
+        _buildShippingInfo(context),
         
         const SizedBox(height: 20),
         
@@ -730,7 +787,7 @@ Widget _buildOrderItems(CartProvider cart) {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     // Giữ nguyên logic áp dụng coupon từ code cũ
                     final enteredCode = discountController.text.trim();
                     final coupon = availableCoupons.firstWhere(
@@ -780,6 +837,18 @@ Widget _buildOrderItems(CartProvider cart) {
                         appliedCoupon = coupon;
                         discountAmount = calculatedDiscount;
                       });
+                      // Cập nhật số lần sử dụng trong database
+                      try {
+                        await CouponService.updateCouponUsage(coupon.code);
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Lỗi khi cập nhật mã giảm giá: ${e.toString()}'),
+                            backgroundColor: AppColors.error,
+                          ),
+                        );
+                        return;
+                      }
 
                       HapticFeedback.lightImpact();
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -872,136 +941,162 @@ Widget _buildOrderItems(CartProvider cart) {
       ),
     );
   }
+  
+bool get isShippingInfoValid {
+  return receiverName != null &&
+         receiverName!.isNotEmpty &&
+         receiverPhone != null &&
+         receiverPhone!.isNotEmpty &&
+         receiverAddress != null &&
+         receiverAddress!.isNotEmpty;
+}
 
-  Widget _buildShippingInfo() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.local_shipping, color: AppColors.info, size: 24),
-              const SizedBox(width: 8),
-              Text(
-                'Thông tin giao hàng',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ],
-          ),
-          
-          const SizedBox(height: 16),
-          
-          if (receiverName != null && receiverName!.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.success.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.success.withOpacity(0.3)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.person, color: AppColors.success, size: 16),
-                      const SizedBox(width: 8),
-                      Text(
-                        receiverName!,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ],
+bool _isValidPhoneNumber(String phone) {
+  // Kiểm tra số điện thoại có 10 số và bắt đầu bằng 0
+  final phoneRegex = RegExp(r'^0\d{9}$');
+  return phoneRegex.hasMatch(phone);
+}
+
+  Widget _buildShippingInfo(BuildContext context) {
+  return Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.local_shipping, color: AppColors.info, size: 24),
+            const SizedBox(width: 8),
+            Text(
+              'Thông tin giao hàng',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
                   ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(Icons.phone, color: AppColors.success, size: 16),
-                      const SizedBox(width: 8),
-                      Text(
-                        receiverPhone!,
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(Icons.location_on, color: AppColors.success, size: 16),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          receiverAddress!,
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
             ),
-          
-          const SizedBox(height: 16),
-          
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // Thông tin người nhận (nếu có)
+        if (receiverName != null && receiverName!.isNotEmpty)
           Container(
-            width: double.infinity,
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.info, Colors.blueAccent],
-              ),
+              color: AppColors.success.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.success.withOpacity(0.3)),
             ),
-            child: ElevatedButton.icon(
-              onPressed: () {
-                HapticFeedback.lightImpact();
-                _showShippingInfoBottomSheet(context);
-              },
-              icon: const Icon(Icons.edit, color: Colors.white),
-              label: Text(
-                receiverName != null && receiverName!.isNotEmpty
-                    ? 'Chỉnh sửa thông tin'
-                    : 'Thêm thông tin người nhận',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Tên
+                Row(
+                  children: [
+                    const Icon(Icons.person, color: AppColors.success, size: 16),
+                    const SizedBox(width: 8),
+                    Text(
+                      receiverName!,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                shadowColor: Colors.transparent,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                const SizedBox(height: 8),
+                // Số điện thoại
+                Row(
+                  children: [
+                    const Icon(Icons.phone, color: AppColors.success, size: 16),
+                    const SizedBox(width: 8),
+                    Text(
+                      receiverPhone ?? 'Chưa có số điện thoại',
+                      style: const TextStyle(color: AppColors.textSecondary),
+                    ),
+                  ],
                 ),
-              ),
+                const SizedBox(height: 8),
+                // Địa chỉ
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.location_on, color: AppColors.success, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: receiverLatitude != null && receiverLongitude != null
+                          ? InkWell(
+                              onTap: () {
+                                final url =
+                                    'https://www.google.com/maps/search/?api=1&query=$receiverLatitude,$receiverLongitude';
+                                launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                              },
+                              child: Text(
+                                receiverAddress ?? "Địa chỉ không xác định",
+                                style: const TextStyle(
+                                  color: Colors.blueAccent,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            )
+                          : Text(
+                              receiverAddress ?? "Không có địa chỉ",
+                              style: const TextStyle(color: AppColors.textSecondary),
+                            ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-        ],
-      ),
-    );
-  }
+
+        const SizedBox(height: 16),
+
+        // Nút chỉnh sửa/thêm
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              _showShippingInfoBottomSheet(context); // hàm mở form chỉnh sửa
+            },
+            icon: const Icon(Icons.edit, color: Colors.white),
+            label: Text(
+              receiverName != null && receiverName!.isNotEmpty
+                  ? 'Chỉnh sửa thông tin'
+                  : 'Thêm thông tin người nhận',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.info,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+
 
   Widget _buildPaymentMethodSection() {
     return Container(
@@ -1129,7 +1224,7 @@ Widget _buildOrderItems(CartProvider cart) {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.4),
+            color: (isShippingInfoValid ? AppColors.primary : Colors.grey).withOpacity(0.4),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -1137,6 +1232,36 @@ Widget _buildOrderItems(CartProvider cart) {
       ),
       child: ElevatedButton(
         onPressed: () async {
+          if (!isShippingInfoValid) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Vui lòng nhập đầy đủ thông tin người nhận trước khi đặt hàng'),
+              backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              margin: const EdgeInsets.all(16),
+            ),
+          );
+          return;
+        }
+
+        if (!_isValidPhoneNumber(receiverPhone ?? '')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Số điện thoại không hợp lệ.'),
+              backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              margin: const EdgeInsets.all(16),
+            ),
+          );
+          return;
+        }
+
           HapticFeedback.mediumImpact();
           
           // Giữ nguyên toàn bộ logic xử lý thanh toán từ code cũ
@@ -1203,6 +1328,15 @@ Widget _buildOrderItems(CartProvider cart) {
                   discountAmount: discountAmount,
                   onFinish: (paymentId) async {
                     try {
+                      if (appliedCoupon != null) {
+                        try {
+                          await CouponService.updateCouponUsage(appliedCoupon!.code);
+                        } catch (e) {
+                          // Xử lý lỗi nếu cần
+                          debugPrint('Lỗi cập nhật mã giảm giá: $e');
+                        }
+                      }
+
                       await OrderService.insertOrder(order);
                       cart.clearCart();
 
@@ -1236,242 +1370,194 @@ Widget _buildOrderItems(CartProvider cart) {
             );
           }
           else if (selectedPayment == 'QR') {
-  final now = DateTime.now();
-  final mongo.ObjectId orderId = mongo.ObjectId();
+            final now = DateTime.now();
+            final mongo.ObjectId orderId = mongo.ObjectId();
 
-  final orderItems = cart.items.asMap().entries.map((entry) {
-    final i = entry.key;
-    final item = entry.value;
-    return OrderItem(
-      id: i + 1,
-      orderId: orderId,
-      productId: item.productId,
-      quantity: item.quantity,
-      price: item.price,
-      productName: item.productName,
-      productImage: item.productImage,
-    );
-  }).toList();
+            final orderItems = cart.items.asMap().entries.map((entry) {
+              final i = entry.key;
+              final item = entry.value;
+              return OrderItem(
+                id: i + 1,
+                orderId: orderId,
+                productId: item.productId,
+                quantity: item.quantity,
+                price: item.price,
+                productName: item.productName,
+                productImage: item.productImage,
+              );
+            }).toList();
 
-  final totalAmount = (cart.totalPrice + shippingFee - discountAmount).toInt();
+            final totalAmount = (cart.totalPrice + shippingFee - discountAmount).toInt();
 
-  final order = Order(
-    id: orderId,
-    userId: widget.userId,
-    items: orderItems,
-    totalAmount: totalAmount.toDouble(),
-    paymentMethod: 'QR',
-    paymentStatus: 'Đã thanh toán',
-    shippingAddress: receiverAddress ?? '',
-    billingAddress: receiverAddress ?? '',
-    phone: receiverPhone ?? '',
-    createdAt: now,
-    updatedAt: now,
-  );
+            final order = Order(
+              id: orderId,
+              userId: widget.userId,
+              items: orderItems,
+              totalAmount: totalAmount.toDouble(),
+              paymentMethod: 'QR',
+              paymentStatus: 'Đã thanh toán',
+              shippingAddress: receiverAddress ?? '',
+              billingAddress: receiverAddress ?? '',
+              phone: receiverPhone ?? '',
+              createdAt: now,
+              updatedAt: now,
+            );
 
-  // ✅ Dùng QRService để tạo dữ liệu QR
-  final qrContent = 'Thanh toan don ${orderId.toHexString()}';
-  final qrImageUrl = QRService.generateQRImageUrl(
-    amount: totalAmount,
-    content: qrContent,
-  );
-  final bankInfoText = QRService.generateBankInfoText(
-    amount: totalAmount,
-    content: qrContent,
-  );
+            // ✅ Dùng QRService để tạo dữ liệu QR
+            final qrContent = 'Thanh toan don ${orderId.toHexString()}';
+            final qrImageUrl = QRService.generateQRImageUrl(
+              amount: totalAmount,
+              content: qrContent,
+            );
+            final bankInfoText = QRService.generateBankInfoText(
+              amount: totalAmount,
+              content: qrContent,
+            );
 
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => QRCodePaymentPage(
-        qrImageUrl: qrImageUrl,
-        bankInfoText: bankInfoText,
-        onFinish: (paymentId) async {
-          try {
-            await OrderService.insertOrder(order);
-            cart.clearCart();
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => QRCodePaymentPage(
+                  qrImageUrl: qrImageUrl,
+                  bankInfoText: bankInfoText,
+                  onFinish: (paymentId) async {
+                    try {
+                      await OrderService.insertOrder(order);
+                      cart.clearCart();
 
-            if (context.mounted) {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => OrderSuccessPageRedesigned(
-                    paymentId: paymentId,
-                    paymentMethod: 'QR',
-                    receiverName: receiverName ?? '',
-                    receiverPhone: receiverPhone ?? '',
-                    receiverAddress: receiverAddress ?? '',
-                    user: widget.user,
-                    userId: widget.userId,
-                  ),
+                      if (context.mounted) {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => OrderSuccessPageRedesigned(
+                              paymentId: paymentId,
+                              paymentMethod: 'QR',
+                              receiverName: receiverName ?? '',
+                              receiverPhone: receiverPhone ?? '',
+                              receiverAddress: receiverAddress ?? '',
+                              user: widget.user,
+                              userId: widget.userId,
+                            ),
+                          ),
+                          (route) => false,
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Lỗi lưu đơn hàng: ${e.toString()}')),
+                        );
+                      }
+                    }
+                  },
                 ),
-                (route) => false,
-              );
-            }
-          } catch (e) {
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Lỗi lưu đơn hàng: ${e.toString()}')),
-              );
-            }
-          }
-        },
-      ),
-    ),
-  );
-}
-
-
-          else if (selectedPayment == 'Card') {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => CreditCardCheckoutPage(
-        cartItems: cart.items,
-        paymentMethod: 'Card',
-        receiverName: receiverName ?? '',
-        receiverPhone: receiverPhone ?? '',
-        receiverAddress: receiverAddress ?? '',
-        user: widget.user,
-        userId: widget.userId,
-        discountAmount: discountAmount,
-        onFinish: (paymentId) async {
-          try {
-            await OrderService.insertOrder(order);
-            cart.clearCart();
-
-            if (context.mounted) {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => OrderSuccessPageRedesigned(
-                    paymentId: paymentId,
-                    paymentMethod: 'Card',
-                    receiverName: receiverName ?? '',
-                    receiverPhone: receiverPhone ?? '',
-                    receiverAddress: receiverAddress ?? '',
-                    user: widget.user,
-                    userId: widget.userId,
-                  ),
-                ),
-                (route) => false,
-              );
-            }
-          } catch (e) {
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Lỗi lưu đơn hàng: ${e.toString()}')),
-              );
-            }
-          }
-        },
-      ),
-    ),
-  );
-}
-
-          else if (selectedPayment == 'VNPay') {
-  final orderInfo = 'Thanh toan don hang cua ${VNPayService.removeUnicode(receiverName ?? "Khach hang")}';
-
-  final paymentUrl = await VNPayService.createVNPayPaymentUrl(
-    amount: cart.totalPrice + shippingFee - discountAmount,
-    orderInfo: orderInfo,
-  );
-
-  if (paymentUrl == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Không thể tạo liên kết thanh toán VNPay.')),
-    );
-    return;
-  }
-
-  await Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => VNPayWebViewPage(
-        paymentUrl: paymentUrl,
-        returnUrl: 'https://sandbox.vnpayment.vn/return',
-        onFinish: (returnUrl) async {
-          final uri = Uri.parse(returnUrl);
-          final responseCode = uri.queryParameters['vnp_ResponseCode'];
-          final txnRef = uri.queryParameters['vnp_TxnRef'] ?? '';
-          final isValid = VNPayService.verifyReturnUrlSignature(uri);
-          if (!isValid) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('❌ Chữ ký VNPay không hợp lệ!')),
-    );
-    return;
-  }
-          if (responseCode == '00') {
-            try {
-              final now = DateTime.now();
-              final mongo.ObjectId newOrderId = mongo.ObjectId();
-
-              final orderItems = cart.items.asMap().entries.map((entry) {
-                final i = entry.key;
-                final item = entry.value;
-                return OrderItem(
-                  id: i + 1,
-                  orderId: newOrderId,
-                  productId: item.productId,
-                  quantity: item.quantity,
-                  price: item.price,
-                  productName: item.productName,
-                  productImage: item.productImage,
-                );
-              }).toList();
-
-              final newOrder = Order(
-                id: newOrderId,
-                userId: widget.userId,
-                items: orderItems,
-                totalAmount: cart.totalPrice + shippingFee - discountAmount,
-                paymentMethod: 'VNPay',
-                paymentStatus: 'Đã thanh toán',
-                shippingAddress: receiverAddress ?? '',
-                billingAddress: receiverAddress ?? '',
-                phone: receiverPhone ?? '',
-                createdAt: now,
-                updatedAt: now,
-              );
-
-              await OrderService.insertOrder(newOrder);
-              cart.clearCart();
-
-              if (context.mounted) {
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => OrderSuccessPageRedesigned(
-                      paymentId: txnRef,
-                      paymentMethod: 'VNPay',
-                      receiverName: receiverName ?? '',
-                      receiverPhone: receiverPhone ?? '',
-                      receiverAddress: receiverAddress ?? '',
-                      user: widget.user,
-                      userId: widget.userId,
-                    ),
-                  ),
-                  (route) => false,
-                );
-              }
-            } catch (e) {
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Lỗi lưu đơn hàng: ${e.toString()}')),
-                );
-              }
-            }
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Thanh toán thất bại hoặc bị hủy!')),
+              ),
             );
           }
-        },
-      ),
-    ),
-  );
-}
+
+
+          else if (selectedPayment == 'VNPay') {
+            final orderInfo = 'Thanh toan don hang cua ${VNPayService.removeUnicode(receiverName ?? "Khach hang")}';
+
+            final paymentUrl = await VNPayService.createVNPayPaymentUrl(
+              amount: cart.totalPrice + shippingFee - discountAmount,
+              orderInfo: orderInfo,
+            );
+
+            if (paymentUrl == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Không thể tạo liên kết thanh toán VNPay.')),
+              );
+              return;
+            }
+
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => VNPayWebViewPage(
+                  paymentUrl: paymentUrl,
+                  returnUrl: 'https://sandbox.vnpayment.vn/return',
+                  onFinish: (returnUrl) async {
+                    final uri = Uri.parse(returnUrl);
+                    final responseCode = uri.queryParameters['vnp_ResponseCode'];
+                    final txnRef = uri.queryParameters['vnp_TxnRef'] ?? '';
+                    final isValid = VNPayService.verifyReturnUrlSignature(uri);
+                    if (!isValid) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('❌ Chữ ký VNPay không hợp lệ!')),
+              );
+              return;
+            }
+                    if (responseCode == '00') {
+                      try {
+                        final now = DateTime.now();
+                        final mongo.ObjectId newOrderId = mongo.ObjectId();
+
+                        final orderItems = cart.items.asMap().entries.map((entry) {
+                          final i = entry.key;
+                          final item = entry.value;
+                          return OrderItem(
+                            id: i + 1,
+                            orderId: newOrderId,
+                            productId: item.productId,
+                            quantity: item.quantity,
+                            price: item.price,
+                            productName: item.productName,
+                            productImage: item.productImage,
+                          );
+                        }).toList();
+
+                        final newOrder = Order(
+                          id: newOrderId,
+                          userId: widget.userId,
+                          items: orderItems,
+                          totalAmount: cart.totalPrice + shippingFee - discountAmount,
+                          paymentMethod: 'VNPay',
+                          paymentStatus: 'Đã thanh toán',
+                          shippingAddress: receiverAddress ?? '',
+                          billingAddress: receiverAddress ?? '',
+                          phone: receiverPhone ?? '',
+                          createdAt: now,
+                          updatedAt: now,
+                        );
+
+                        await OrderService.insertOrder(newOrder);
+                        cart.clearCart();
+
+                        if (context.mounted) {
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => OrderSuccessPageRedesigned(
+                                paymentId: txnRef,
+                                paymentMethod: 'VNPay',
+                                receiverName: receiverName ?? '',
+                                receiverPhone: receiverPhone ?? '',
+                                receiverAddress: receiverAddress ?? '',
+                                user: widget.user,
+                                userId: widget.userId,
+                              ),
+                            ),
+                            (route) => false,
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Lỗi lưu đơn hàng: ${e.toString()}')),
+                          );
+                        }
+                      }
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Thanh toán thất bại hoặc bị hủy!')),
+                      );
+                    }
+                  },
+                ),
+              ),
+            );
+          }
 
           else {
             // COD và các phương thức khác
@@ -1513,7 +1599,9 @@ Widget _buildOrderItems(CartProvider cart) {
           ),
         ),
         child: Text(
-          'Thanh toán ${currency.format(total)}VNĐ',
+          isShippingInfoValid 
+          ? 'Thanh toán ${currency.format(total)}VNĐ'
+          : 'Vui lòng nhập thông tin người nhận',
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,

@@ -7,6 +7,7 @@ import 'package:kfc_seller/Screens/Home/home_screen.dart';
 import 'package:kfc_seller/Screens/More/Favorite/favorite_page.dart';
 import 'package:kfc_seller/Screens/More/OrderHistory/order_history_page.dart';
 import 'package:kfc_seller/Screens/Order/order_service.dart';
+import 'package:kfc_seller/Screens/Voucher/VoucherService.dart';
 import 'package:kfc_seller/Theme/app_theme.dart';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
 import 'package:intl/intl.dart';
@@ -36,6 +37,7 @@ class _ProfileScreenRedesignedState extends State<ProfileScreenRedesigned>
   
   int totalOrders = 0;
   bool isLoadingOrders = true;
+  int totalVouchers = 0;
 
   @override
   void initState() {
@@ -64,6 +66,7 @@ class _ProfileScreenRedesignedState extends State<ProfileScreenRedesigned>
     
     _animationController.forward();
     _loadUserStats();
+    _loadUserVouchers();
   }
 
   @override
@@ -87,6 +90,19 @@ class _ProfileScreenRedesignedState extends State<ProfileScreenRedesigned>
         isLoadingOrders = false;
       });
       print('Error loading user stats: $e');
+    }
+  }
+  
+  void _loadUserVouchers() async {
+    try {
+      final vouchers = await CouponService.fetchCoupons();
+      print('Vouchers fetched: ${vouchers.length}'); // ✅ In số lượng
+
+      setState(() {
+        totalVouchers = vouchers.length;
+      });
+    } catch (e) {
+      print('Error loading vouchers: $e');
     }
   }
 
@@ -399,7 +415,7 @@ class _ProfileScreenRedesignedState extends State<ProfileScreenRedesigned>
           Expanded(
             child: _buildStatCard(
               'Voucher',
-              '3',
+              totalVouchers.toString(),
               Icons.local_offer,
               AppColors.success,
             ),

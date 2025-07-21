@@ -15,11 +15,13 @@ import 'package:kfc_seller/Models/Mongdbmodel.dart';
 class MenuTabRedesigned extends StatefulWidget {
   final mongo.ObjectId userId;
   final Mongodbmodel user;
+  final String? initialSearchQuery;
   
   const MenuTabRedesigned({
     super.key, 
     required this.userId, 
-    required this.user
+    required this.user, 
+    this.initialSearchQuery,
   });
 
   @override
@@ -45,6 +47,12 @@ class MenuTabRedesignedState extends State<MenuTabRedesigned>
     super.initState();
     _productsFuture = _fetchProducts();
     
+    // Xử lý initial search query
+    if (widget.initialSearchQuery != null) {
+      _searchController.text = widget.initialSearchQuery!;
+      searchQuery = widget.initialSearchQuery!;
+    }
+
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
@@ -74,24 +82,16 @@ class MenuTabRedesignedState extends State<MenuTabRedesigned>
       setState(() {
         selectedCategory = category;
         searchQuery = '';
-        _searchController.clear();
-      });
-      
-      // Scroll to top để user thấy kết quả
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          // Trigger rebuild để cập nhật UI
-        }
       });
     }
   }
 
-  // ✅ Method để search products từ HomeTab
+  // Thêm method để search từ bên ngoài
   void searchProducts(String query) {
     if (mounted) {
       setState(() {
         searchQuery = query;
-        selectedCategory = 'Tất cả'; // Reset category khi search
+        selectedCategory = 'Tất cả';
         _searchController.text = query;
       });
     }

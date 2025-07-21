@@ -146,39 +146,35 @@ class _HomeScreenRedesignedState extends State<HomeScreenRedesigned>
   List<Widget> get _pages => [
     HomeTabRedesigned(
       onCategorySelected: (category) {
-        // Chuyển sang MenuTab và filter theo category
-        _safeNavigation(() {
-          setState(() => _selectedIndex = 1);
-          _pageController.animateToPage(
-            1,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-          );
-          
-          // Filter category trong MenuTab
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (_menuTabKey.currentState != null) {
-              _menuTabKey.currentState!.filterByCategory(category);
-            }
-          });
+        // Chuyển sang tab Menu (index 1)
+        _onItemTapped(1);
+        // Sau khi chuyển tab, thực hiện filter
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_menuTabKey.currentState != null && mounted) {
+            _menuTabKey.currentState!.filterByCategory(category);
+          }
         });
       },
       onSearchQueryChanged: (query) {
-        // Chuyển sang MenuTab và search
         if (query.isNotEmpty) {
-          _safeNavigation(() {
-            setState(() => _selectedIndex = 1);
-            _pageController.animateToPage(
-              1,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-            );
-            
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (_menuTabKey.currentState != null) {
-                _menuTabKey.currentState!.searchProducts(query);
-              }
-            });
+          _onItemTapped(1);
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (_menuTabKey.currentState != null && mounted) {
+              _menuTabKey.currentState!.searchProducts(query);
+            }
+          });
+        }
+      },
+      onNavigateToMenu: (index, {String? query}) {
+        // Xử lý chuyển tab
+        _onItemTapped(index);
+        
+        // Nếu có query, cập nhật cho MenuTab sau khi chuyển tab
+        if (query != null && query.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (_menuTabKey.currentState != null && mounted) {
+              _menuTabKey.currentState!.searchProducts(query);
+            }
           });
         }
       },
@@ -193,7 +189,7 @@ class _HomeScreenRedesignedState extends State<HomeScreenRedesigned>
       userId: widget.userId,
       onGoToMenuTab: () => _onItemTapped(1),
     ),
-    MoreTabRedesigned(currentUser: widget.user,),
+    MoreTabRedesigned(currentUser: widget.user),
   ];
 
   // SỬA: Safe navigation helper

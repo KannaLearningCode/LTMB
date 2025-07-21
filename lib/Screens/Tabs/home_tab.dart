@@ -12,7 +12,7 @@ import 'package:url_launcher/url_launcher.dart';
 class HomeTabRedesigned extends StatefulWidget {
   final Function(String)? onCategorySelected;
   final Function(String)? onSearchQueryChanged;
-  final Function(int)? onNavigateToMenu; // Thêm callback để navigate
+  final Function(int, {String? query})? onNavigateToMenu;
   
   const HomeTabRedesigned({
     super.key,
@@ -155,6 +155,8 @@ class _HomeTabRedesignedState extends State<HomeTabRedesigned>
     }
   }
 
+
+
   void _openGoogleMaps() async {
     const url = 'https://www.google.com/maps';
     if (await canLaunchUrl(Uri.parse(url))) {
@@ -247,6 +249,7 @@ class _HomeTabRedesignedState extends State<HomeTabRedesigned>
       },
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -341,68 +344,6 @@ class _HomeTabRedesignedState extends State<HomeTabRedesigned>
                     size: 20,
                   ),
                 ],
-              ),
-            ),
-          ),
-          
-          const SizedBox(height: 12),
-          
-          // Search bar
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: TextField(
-              controller: _searchController,
-              onChanged: (query) {
-                widget.onSearchQueryChanged?.call(query);
-                if (query.isNotEmpty) {
-                  // Chuyển sang MenuTab khi search
-                  widget.onNavigateToMenu?.call(1);
-                }
-              },
-              decoration: InputDecoration(
-                hintText: 'Tìm kiếm món ăn...',
-                hintStyle: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 14,
-                ),
-                prefixIcon: Icon(
-                  Icons.search,
-                  color: AppColors.textSecondary,
-                  size: 20,
-                ),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: Icon(
-                          Icons.clear,
-                          color: AppColors.textSecondary,
-                          size: 20,
-                        ),
-                        onPressed: () {
-                          _searchController.clear();
-                          widget.onSearchQueryChanged?.call('');
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
               ),
             ),
           ),
@@ -632,9 +573,8 @@ class _HomeTabRedesignedState extends State<HomeTabRedesigned>
                 TextButton.icon(
                   onPressed: () {
                     HapticFeedback.lightImpact();
-                    // Chuyển sang MenuTab với category được chọn
+                    // Gọi callback để chuyển tab và filter
                     widget.onCategorySelected?.call(category);
-                    widget.onNavigateToMenu?.call(1);
                   },
                   icon: Text(
                     'Xem tất cả',
@@ -753,7 +693,9 @@ class _HomeTabRedesignedState extends State<HomeTabRedesigned>
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              const Spacer(),
+
+                              const SizedBox(height: 4),
+                              
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
@@ -767,39 +709,7 @@ class _HomeTabRedesignedState extends State<HomeTabRedesigned>
                                       ),
                                     ),
                                   ),
-                                  GestureDetector(
-                                    onTap: product.isAvailable ? () {
-                                      HapticFeedback.lightImpact();
-                                      // Add to cart logic
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text('Đã thêm ${product.name} vào giỏ hàng'),
-                                          backgroundColor: AppColors.success,
-                                          behavior: SnackBarBehavior.floating,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          margin: const EdgeInsets.all(16),
-                                          duration: const Duration(seconds: 1),
-                                        ),
-                                      );
-                                    } : null,
-                                    child: Container(
-                                      width: 28,
-                                      height: 28,
-                                      decoration: BoxDecoration(
-                                        color: product.isAvailable 
-                                            ? AppColors.primary 
-                                            : AppColors.textSecondary,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Icon(
-                                        Icons.add,
-                                        color: Colors.white,
-                                        size: 16,
-                                      ),
-                                    ),
-                                  ),
+                                  
                                 ],
                               ),
                             ],

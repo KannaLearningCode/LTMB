@@ -5,6 +5,7 @@ import 'package:kfc_seller/Screens/admin/category_management_screen.dart';
 import 'package:kfc_seller/Screens/admin/order_management_screen.dart';
 import 'package:kfc_seller/Screens/admin/voucher_management_screen.dart';
 import 'package:kfc_seller/Screens/Authen/login_screen.dart';
+import 'package:kfc_seller/Theme/colors.dart';
 
 class AdminScreen extends StatelessWidget {
   const AdminScreen({super.key});
@@ -53,7 +54,7 @@ class AdminScreen extends StatelessWidget {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: AppColors.textPrimary,
               ),
             ),
           ],
@@ -68,6 +69,7 @@ class AdminScreen extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
       ),
+      color: AppColors.surface,
       child: InkWell(
         onTap: () {
           Navigator.push(
@@ -83,7 +85,7 @@ class AdminScreen extends StatelessWidget {
               Icon(
                 icon,
                 size: 48,
-                color: Colors.green,
+                color: AppColors.primary,
               ),
               SizedBox(height: 16),
               Text(
@@ -92,6 +94,7 @@ class AdminScreen extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
                 ),
               ),
             ],
@@ -107,30 +110,29 @@ class AdminScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(
           'Quản lý CKICKY',
-          style: TextStyle(color: Colors.white), // Đổi màu chữ ở đây
+          style: TextStyle(color: AppColors.textOnPrimary),
         ),
-        backgroundColor: Colors.green,
+        backgroundColor: AppColors.primary,
         automaticallyImplyLeading: false,
         actions: [
-    IconButton(
-      icon: Icon(
-        Icons.logout,
-        color: Colors.white,  
-      ),
-      onPressed: () {
-        // Thực hiện đăng xuất, sau đó điều hướng về trang đăng nhập
-        Navigator.pushAndRemoveUntil(
-          context,
-
-          MaterialPageRoute(builder: (context) => LoginScreenRedesigned()),
-          (route) => false,
-        );
-      },
-    ),
-  ],
+          IconButton(
+            icon: Icon(
+              Icons.logout,
+              color: AppColors.textOnPrimary,  
+            ),
+            onPressed: () {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => LoginScreenRedesigned()),
+                (route) => false,
+              );
+            },
+          ),
+        ],
       ),
       body: Container(
         padding: EdgeInsets.all(16),
+        color: AppColors.background,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -145,7 +147,7 @@ class AdminScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   SizedBox(height: 8),
@@ -153,7 +155,7 @@ class AdminScreen extends StatelessWidget {
                     'Chọn mục quản lý bên dưới',
                     style: TextStyle(
                       fontSize: 16,
-                      color: Colors.grey[600],
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ],
@@ -200,7 +202,7 @@ class AdminScreen extends StatelessWidget {
                   ),
 
                   // Quản lý mã giảm giá
-                    _buildAdminTile(
+                  _buildAdminTile(
                     context,
                     'Quản lý mã giảm giá',
                     Icons.card_giftcard,
@@ -214,4 +216,4 @@ class AdminScreen extends StatelessWidget {
       ),
     );
   }
-} 
+}

@@ -39,13 +39,19 @@ class Coupon {
       maxDiscountAmount: (json['maxDiscountAmount'] ?? 0).toDouble(),
       usageLimit: json['usageLimit'] ?? 0,
       usedCount: json['usedCount'] ?? 0,
-      expiresAt: json['expiresAt'] != null
-          ? DateTime.parse(json['expiresAt'])
-          : null,
+      expiresAt: json['expiresAt'] != null 
+        ? (json['expiresAt'] is DateTime 
+            ? json['expiresAt'] 
+            : DateTime.parse(json['expiresAt']))
+        : null,
       isActive: json['isActive'] ?? true,
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
-    );
+      createdAt: json['createdAt'] is DateTime 
+          ? json['createdAt'] 
+          : DateTime.parse(json['createdAt']),
+      updatedAt: json['updatedAt'] is DateTime 
+          ? json['updatedAt'] 
+          : DateTime.parse(json['updatedAt']),
+      );
   }
 
   Map<String, dynamic> toJson() {

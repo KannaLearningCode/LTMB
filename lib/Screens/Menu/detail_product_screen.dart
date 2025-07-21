@@ -4,9 +4,12 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:kfc_seller/Models/cart.dart';
 import 'package:kfc_seller/Models/product.dart';
+import 'package:kfc_seller/Models/review.dart';
 import 'package:kfc_seller/Screens/Cart/cart_provider.dart';
 import 'package:kfc_seller/Screens/Home/home_screen.dart';
 import 'package:kfc_seller/Screens/More/Favorite/favorite_service.dart';
+import 'package:kfc_seller/Screens/Review/review_service.dart';
+import 'package:kfc_seller/Screens/Review/user_service.dart';
 import 'package:kfc_seller/Theme/app_theme.dart';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
 import 'package:provider/provider.dart';
@@ -40,6 +43,12 @@ class _DetailProductPageRedesignedState extends State<DetailProductPageRedesigne
   late AnimationController _contentAnimationController;
   late Animation<double> _imageScaleAnimation;
   late Animation<double> _contentSlideAnimation;
+
+  List<Review> _reviews = [];
+  double _averageRating = 0.0;
+  final _commentController = TextEditingController();
+  int _selectedStars = 5;
+
 
   @override
   void initState() {
@@ -86,6 +95,8 @@ class _DetailProductPageRedesignedState extends State<DetailProductPageRedesigne
       cartProvider.setUser(widget.userId);
       cartProvider.loadCart(widget.userId);
     });
+
+    _loadReviews();
   }
 
   @override
@@ -110,6 +121,27 @@ void _toggleFavorite() async {
     );
   }
 }
+
+Future<void> _loadReviews() async {
+  final reviews = await ReviewService.getReviewsByProductId(widget.product.id);
+  double avg = 0;
+
+  for (var review in reviews) {
+    final user = await UserService.getUserById(review.userId);
+    review.userName = user?.name ?? 'Người dùng';
+    review.userAvatar = user?.avatarUrl ?? '';
+  }
+
+  if (reviews.isNotEmpty) {
+    avg = reviews.map((r) => r.rating).reduce((a, b) => a + b) / reviews.length;
+  }
+
+  setState(() {
+    _reviews = reviews;
+    _averageRating = avg;
+  });
+}
+
 
   void _onItemTapped(int index) {
     setState(() => _selectedIndex = index);
@@ -515,8 +547,23 @@ void _toggleFavorite() async {
                                     ],
                                   ),
                                   
-                                  // ✅ Thêm padding để không bị che bởi bottom sheet
+                                  const SizedBox(height: 24),
+
+                                  Text(
+                                    'Đánh giá & Bình luận',
+                                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  _buildRatingSummary(),
+                                  const SizedBox(height: 12),
+                                  _buildReviewInput(),
+                                  const SizedBox(height: 24),
+                                  _buildReviewList(),
+
                                   const SizedBox(height: 180),
+
                                 ],
                               ),
                             ),
@@ -794,4 +841,107 @@ void _toggleFavorite() async {
       ),
     );
   }
+
+  Widget _buildRatingSummary() {
+  return Row(
+    children: [
+      const Icon(Icons.star, color: Colors.amber),
+      const SizedBox(width: 4),
+      Text('${_averageRating.toStringAsFixed(1)} (${_reviews.length} đánh giá)'),
+    ],
+  );
+}
+
+  Widget _buildReviewInput() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Đánh giá sản phẩm của bạn:', style: TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        Row(
+          children: List.generate(5, (index) {
+            return IconButton(
+              icon: Icon(
+                index < _selectedStars ? Icons.star : Icons.star_border,
+                color: Colors.amber,
+              ),
+              onPressed: () {
+                setState(() => _selectedStars = index + 1);
+              },
+            );
+          }),
+        ),
+        TextField(
+          controller: _commentController,
+          decoration: InputDecoration(
+            hintText: 'Viết bình luận...',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+          maxLines: 2,
+        ),
+        const SizedBox(height: 8),
+        ElevatedButton(
+          onPressed: () async {
+            if (_commentController.text.trim().isEmpty) return;
+
+            final review = Review(
+              id: mongo.ObjectId(),
+              userId: widget.userId,
+              productId: widget.product.id,
+              rating: _selectedStars,
+              comment: _commentController.text.trim(),
+              images: [],
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            );
+
+            await ReviewService.submitReview(review);
+            _commentController.clear();
+            _selectedStars = 5;
+            _loadReviews();
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Đã gửi đánh giá!')),
+            );
+          },
+          child: const Text('Gửi đánh giá'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReviewList() {
+    if (_reviews.isEmpty) return const Text('Chưa có đánh giá nào.');
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: _reviews.map((review) {
+        return ListTile(
+          leading: CircleAvatar(
+            backgroundImage: review.userAvatar != null && review.userAvatar!.isNotEmpty
+                ? NetworkImage(review.userAvatar!)
+                : const AssetImage('assets/images/profile.png') as ImageProvider,
+          ),
+          title: Text(review.userName ?? 'Người dùng'),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: List.generate(5, (index) {
+                  return Icon(
+                    index < review.rating ? Icons.star : Icons.star_border,
+                    color: Colors.amber,
+                    size: 16,
+                  );
+                }),
+              ),
+              const SizedBox(height: 4),
+              Text(review.comment),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
 }

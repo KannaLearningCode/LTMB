@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kfc_seller/Models/Mongdbmodel.dart';
+import 'package:kfc_seller/Screens/More/Coupon/coupon_page.dart';
 import 'package:kfc_seller/Screens/More/Favorite/favorite_page.dart';
 import 'package:kfc_seller/Screens/More/OrderHistory/order_history_page.dart';
 import 'package:kfc_seller/Theme/app_theme.dart';
@@ -293,14 +294,22 @@ class _MoreTabRedesignedState extends State<MoreTabRedesigned> {
           setState(() {});
         });
         break;
-case 'Món ăn yêu thích':
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => FavoritePage(currentUser: widget.currentUser),
-    ),
-  );
-  break;
+      case 'Món ăn yêu thích':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => FavoritePage(currentUser: widget.currentUser),
+          ),
+        );
+        break;
+      case 'Khuyến mãi & Voucher':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const CouponPage(),
+          ),
+        );
+        break;
 
       default:
         ScaffoldMessenger.of(context).showSnackBar(
