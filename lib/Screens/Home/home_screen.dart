@@ -143,14 +143,15 @@ class _HomeScreenRedesignedState extends State<HomeScreenRedesigned>
   }
 
   // SỬA: Thêm callback để liên kết tabs
-  List<Widget> get _pages => [
+   List<Widget> get _pages => [
     HomeTabRedesigned(
+      key: ValueKey('homeTab'),
+      userId: widget.userId,
+      user: widget.user,
       onCategorySelected: (category) {
-        // Chuyển sang tab Menu (index 1)
         _onItemTapped(1);
-        // Sau khi chuyển tab, thực hiện filter
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (_menuTabKey.currentState != null && mounted) {
+          if (_menuTabKey.currentState != null) {
             _menuTabKey.currentState!.filterByCategory(category);
           }
         });

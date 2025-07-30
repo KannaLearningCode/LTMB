@@ -5,37 +5,44 @@ import 'package:flutter/services.dart';
 import 'package:kfc_seller/Theme/app_theme.dart';
 import 'package:kfc_seller/Models/product.dart';
 import 'package:kfc_seller/DbHelper/mongdb.dart';
+import 'package:mongo_dart/mongo_dart.dart' as mongo;
+import 'package:kfc_seller/Models/Mongdbmodel.dart';
 import 'package:kfc_seller/Screens/Home/location_service.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:kfc_seller/Screens/Menu/detail_product_screen.dart';
+
 
 class HomeTabRedesigned extends StatefulWidget {
   final Function(String)? onCategorySelected;
   final Function(String)? onSearchQueryChanged;
   final Function(int, {String? query})? onNavigateToMenu;
-  
+
+  final mongo.ObjectId? userId;   // nullable để tránh lỗi lúc thử nghiệm
+  final Mongodbmodel? user;       // nullable
+
   const HomeTabRedesigned({
     super.key,
     this.onCategorySelected,
     this.onSearchQueryChanged,
     this.onNavigateToMenu,
+    this.userId,
+    this.user,
   });
 
   @override
   State<HomeTabRedesigned> createState() => _HomeTabRedesignedState();
 }
 
-class _HomeTabRedesignedState extends State<HomeTabRedesigned>
-    with TickerProviderStateMixin {
-  
+class _HomeTabRedesignedState extends State<HomeTabRedesigned> with TickerProviderStateMixin {
   final PageController _pageController = PageController(viewportFraction: 0.9);
   final TextEditingController _searchController = TextEditingController();
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-  
+
   int _currentPage = 0;
   Timer? _timer;
-  Map<String, List<Product>> _productsByCategory = {}; // Thay đổi structure
+  Map<String, List<Product>> _productsByCategory = {};
   List<String> _categories = [];
   bool _isLoading = true;
   String _currentAddress = "Đang tải vị trí...";
@@ -56,27 +63,24 @@ class _HomeTabRedesignedState extends State<HomeTabRedesigned>
   @override
   void initState() {
     super.initState();
-    
+
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-    
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
-    
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
     _animationController.forward();
-    
-    // Load data
-    _loadProductsByCategory(); // Thay đổi method load
+
+    _loadProductsByCategory();
     _getCurrentLocation();
-    
-    // Auto slide banner
+
     _timer = Timer.periodic(const Duration(seconds: 4), (timer) {
       if (_pageController.hasClients && mounted) {
         _currentPage++;
@@ -99,13 +103,11 @@ class _HomeTabRedesignedState extends State<HomeTabRedesigned>
     super.dispose();
   }
 
-  // Method mới để load products theo category
   Future<void> _loadProductsByCategory() async {
     try {
       final productData = await MongoDatabase.db.collection('products').find().toList();
       final products = productData.map<Product>((json) => Product.fromJson(json)).toList();
-      
-      // Group products by category
+
       Map<String, List<Product>> groupedProducts = {};
       for (var product in products) {
         if (!groupedProducts.containsKey(product.category)) {
@@ -113,7 +115,7 @@ class _HomeTabRedesignedState extends State<HomeTabRedesigned>
         }
         groupedProducts[product.category]!.add(product);
       }
-      
+
       if (mounted) {
         setState(() {
           _productsByCategory = groupedProducts;
@@ -138,7 +140,7 @@ class _HomeTabRedesignedState extends State<HomeTabRedesigned>
       });
 
       String address = await LocationService.getCurrentAddress();
-      
+
       if (mounted) {
         setState(() {
           _currentAddress = address;
@@ -154,8 +156,6 @@ class _HomeTabRedesignedState extends State<HomeTabRedesigned>
       }
     }
   }
-
-
 
   void _openGoogleMaps() async {
     const url = 'https://www.google.com/maps';
@@ -190,15 +190,15 @@ class _HomeTabRedesignedState extends State<HomeTabRedesigned>
             ),
             const SizedBox(height: 20),
             ..._defaultAddresses.map((address) => ListTile(
-              leading: const Icon(Icons.location_on, color: AppColors.primary),
-              title: Text(address),
-              onTap: () {
-                setState(() {
-                  _currentAddress = address;
-                });
-                Navigator.pop(context);
-              },
-            )),
+                  leading: const Icon(Icons.location_on, color: AppColors.primary),
+                  title: Text(address),
+                  onTap: () {
+                    setState(() {
+                      _currentAddress = address;
+                    });
+                    Navigator.pop(context);
+                  },
+                )),
             ListTile(
               leading: const Icon(Icons.add_location, color: AppColors.secondary),
               title: const Text('Thêm địa chỉ mới'),
@@ -250,7 +250,6 @@ class _HomeTabRedesignedState extends State<HomeTabRedesigned>
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     return FadeTransition(
@@ -260,14 +259,11 @@ class _HomeTabRedesignedState extends State<HomeTabRedesigned>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 16),
-            
-            // Search và Address section
+
             _buildSearchAndAddress(),
-            
-            // Banner carousel
+
             _buildBannerCarousel(),
-            
-            // Categories với products - THAY ĐỔI CHÍNH Ở ĐÂY
+
             if (_isLoading)
               _buildLoadingState()
             else
@@ -283,7 +279,6 @@ class _HomeTabRedesignedState extends State<HomeTabRedesigned>
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         children: [
-          // Address bar
           GestureDetector(
             onTap: _showAddressOptions,
             child: Container(
@@ -402,7 +397,6 @@ class _HomeTabRedesignedState extends State<HomeTabRedesigned>
                             );
                           },
                         ),
-                        // Gradient overlay
                         Container(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
@@ -422,8 +416,7 @@ class _HomeTabRedesignedState extends State<HomeTabRedesigned>
               },
             ),
           ),
-          
-          // Page indicators
+
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -434,8 +427,8 @@ class _HomeTabRedesignedState extends State<HomeTabRedesigned>
                 width: _currentPage == index ? 20 : 6,
                 height: 6,
                 decoration: BoxDecoration(
-                  color: _currentPage == index 
-                      ? AppColors.primary 
+                  color: _currentPage == index
+                      ? AppColors.primary
                       : Colors.white.withOpacity(0.4),
                   borderRadius: BorderRadius.circular(3),
                 ),
@@ -472,10 +465,9 @@ class _HomeTabRedesignedState extends State<HomeTabRedesigned>
     );
   }
 
-  // METHOD MỚI - Tạo các section cho từng category
   List<Widget> _buildCategoryProductSections() {
     List<Widget> sections = [];
-    
+
     for (String category in _categories) {
       final products = _productsByCategory[category] ?? [];
       if (products.isNotEmpty) {
@@ -483,14 +475,14 @@ class _HomeTabRedesignedState extends State<HomeTabRedesigned>
         sections.add(const SizedBox(height: 24));
       }
     }
-    
+
     return sections;
   }
 
   Widget _buildCategorySection(String category, List<Product> products) {
     final currencyFormatter = NumberFormat.currency(locale: 'vi_VN', symbol: '');
-    final displayProducts = products.take(10).toList(); // Chỉ hiển thị 10 món đầu
-    
+    final displayProducts = products.take(10).toList();
+
     IconData categoryIcon;
     switch (category.toLowerCase()) {
       case 'gà rán':
@@ -556,24 +548,22 @@ class _HomeTabRedesignedState extends State<HomeTabRedesigned>
                       Text(
                         category,
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
                       ),
                       Text(
                         '${products.length} món ăn',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
+                              color: AppColors.textSecondary,
+                            ),
                       ),
                     ],
                   ),
                 ),
-                // Nút "Xem tất cả"
                 TextButton.icon(
                   onPressed: () {
                     HapticFeedback.lightImpact();
-                    // Gọi callback để chuyển tab và filter
                     widget.onCategorySelected?.call(category);
                   },
                   icon: Text(
@@ -593,8 +583,7 @@ class _HomeTabRedesignedState extends State<HomeTabRedesigned>
               ],
             ),
           ),
-          
-          // Product list horizontal
+
           SizedBox(
             height: 220,
             child: ListView.builder(
@@ -603,126 +592,119 @@ class _HomeTabRedesignedState extends State<HomeTabRedesigned>
               itemCount: displayProducts.length,
               itemBuilder: (context, index) {
                 final product = displayProducts[index];
-                return Container(
-                  width: 160,
-                  margin: const EdgeInsets.only(right: 12),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceVariant,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.grey.withOpacity(0.1),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Product image
-                      Container(
-                        height: 120,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(12),
-                          ),
-                        ),
-                        child: Stack(
-                          children: [
-                            ClipRRect(
-                              borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(12),
-                              ),
-                              child: Image.network(
-                                product.image,
-                                width: double.infinity,
-                                height: double.infinity,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    color: AppColors.surfaceVariant,
-                                    child: const Center(
-                                      child: Icon(
-                                        Icons.fastfood,
-                                        size: 40,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                            // Available status
-                            if (!product.isAvailable)
-                              Container(
-                                width: double.infinity,
-                                height: double.infinity,
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.5),
-                                  borderRadius: const BorderRadius.vertical(
-                                    top: Radius.circular(12),
-                                  ),
-                                ),
-                                child: const Center(
-                                  child: Text(
-                                    'Hết hàng',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                          ],
+
+                return InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => DetailProductPageRedesigned(
+                          product: product,
+                           userId: widget.userId!,  // Ép không null vì đã kiểm tra
+                           user: widget.user!,
                         ),
                       ),
-                      
-                      // Product info
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                    );
+                  },
+                  child: Container(
+                    width: 160,
+                    margin: const EdgeInsets.only(right: 12),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceVariant,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.grey.withOpacity(0.1),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          height: 120,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                          ),
+                          child: Stack(
                             children: [
-                              Text(
-                                product.name,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13,
-                                  color: AppColors.textPrimary,
+                              ClipRRect(
+                                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                                child: Image.network(
+                                  product.image,
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      color: AppColors.surfaceVariant,
+                                      child: const Center(
+                                        child: Icon(Icons.fastfood, size: 40, color: AppColors.textSecondary),
+                                      ),
+                                    );
+                                  },
                                 ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
                               ),
-
-                              const SizedBox(height: 4),
-                              
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
+                              if (!product.isAvailable)
+                                Container(
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.5),
+                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                                  ),
+                                  child: const Center(
                                     child: Text(
-                                      '${currencyFormatter.format(product.price)}VNĐ',
-                                      style: const TextStyle(
-                                        color: AppColors.primary,
+                                      'Hết hàng',
+                                      style: TextStyle(
+                                        color: Colors.white,
                                         fontWeight: FontWeight.bold,
-                                        fontSize: 14,
+                                        fontSize: 12,
                                       ),
                                     ),
                                   ),
-                                  
-                                ],
-                              ),
+                                ),
                             ],
                           ),
                         ),
-                      ),
-                    ],
+
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  product.name,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${currencyFormatter.format(product.price)} VNĐ',
+                                  style: const TextStyle(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },
             ),
           ),
-          
+
           const SizedBox(height: 16),
         ],
       ),

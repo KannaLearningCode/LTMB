@@ -1,14 +1,13 @@
-// lib/screens/auth/change_password_screen.dart
 import 'package:flutter/material.dart';
 import 'package:kfc_seller/constants.dart';
 import 'package:mongo_dart/mongo_dart.dart' as M;
 import 'package:kfc_seller/screens/Authen/login_screen.dart';
 import 'package:kfc_seller/utils/password_hash.dart';
 import 'package:kfc_seller/Screens/Authen/otp_service.dart';
+import 'package:kfc_seller/Theme/colors.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   final String email;
-
   const ChangePasswordScreen({super.key, required this.email});
 
   @override
@@ -42,20 +41,20 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       final userCollection = db.collection(USER_COLLECTION);
 
       final user = await userCollection.findOne({'Email': widget.email});
-
       if (user == null) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Không tìm thấy người dùng.'),
-          backgroundColor: Colors.red,
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Không tìm thấy người dùng.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
         return;
       }
 
       final newPassword = newPasswordController.text.trim();
       final newHashedPassword = PasswordHash.hashPassword(newPassword);
 
-      // Cập nhật mật khẩu
       await userCollection.updateOne(
         M.where.eq("Email", widget.email),
         M.modify
@@ -63,17 +62,17 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             .set("RePassword", newHashedPassword)
             .set("UpdatedAt", DateTime.now().toIso8601String()),
       );
-
       await db.close();
 
-      // Xóa OTP token sau khi đổi mật khẩu thành công
       await OTPService.clearOTP(widget.email);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Đổi mật khẩu thành công!'),
-          backgroundColor: Colors.green,
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đổi mật khẩu thành công!'),
+            backgroundColor: AppColors.success,
+          ),
+        );
 
         Navigator.pushAndRemoveUntil(
           context,
@@ -83,24 +82,30 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       }
     } catch (e) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Lỗi: ${e.toString()}'),
-        backgroundColor: Colors.red,
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Lỗi: ${e.toString()}'),
+          backgroundColor: AppColors.error,
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final themeColor = Colors.green;
+    final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.colorScheme.background,
       appBar: AppBar(
-        title: const Text('Đặt lại mật khẩu'),
-        backgroundColor: themeColor,
-        foregroundColor: Colors.white,
-        elevation: 0,
+        title: Text(
+          'Đặt lại mật khẩu',
+          style: theme.appBarTheme.titleTextStyle,
+        ),
+        backgroundColor: theme.appBarTheme.backgroundColor,
+        foregroundColor: theme.appBarTheme.foregroundColor,
+        elevation: theme.appBarTheme.elevation,
+        centerTitle: theme.appBarTheme.centerTitle,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -111,70 +116,56 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 20),
-                
+
                 // Icon và tiêu đề
                 Container(
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: themeColor.withOpacity(0.1),
+                    color: AppColors.primary.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.lock_reset,
                     size: 40,
-                    color: themeColor,
+                    color: AppColors.primary,
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
-                
-                const Text(
+
+                Text(
                   'Tạo mật khẩu mới',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                  style: theme.textTheme.displaySmall?.copyWith(
+                    color: theme.colorScheme.onBackground,
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 Text(
                   'Tạo mật khẩu mới cho: ${widget.email}',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: Colors.black54,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.colorScheme.onBackground.withOpacity(0.7),
                   ),
                 ),
-                
+
                 const SizedBox(height: 40),
-                
+
                 // Mật khẩu mới
                 TextFormField(
                   controller: newPasswordController,
                   obscureText: _obscureNew,
                   decoration: InputDecoration(
                     labelText: 'Mật khẩu mới',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(25),
-                      borderSide: BorderSide(color: themeColor),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 16.0,
-                      horizontal: 20.0,
-                    ),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscureNew ? Icons.visibility_off : Icons.visibility,
+                        color: theme.colorScheme.primary,
                       ),
-                      onPressed: () =>
-                          setState(() => _obscureNew = !_obscureNew),
+                      onPressed: () => setState(() => _obscureNew = !_obscureNew),
                     ),
                   ),
                   validator: (value) {
@@ -187,32 +178,21 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     return null;
                   },
                 ),
-                
+
                 const SizedBox(height: 20),
-                
+
                 // Xác nhận mật khẩu
                 TextFormField(
                   controller: confirmPasswordController,
                   obscureText: _obscureConfirm,
                   decoration: InputDecoration(
                     labelText: 'Xác nhận mật khẩu',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(25),
-                      borderSide: BorderSide(color: themeColor),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 16.0,
-                      horizontal: 20.0,
-                    ),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscureConfirm ? Icons.visibility_off : Icons.visibility,
+                        color: theme.colorScheme.primary,
                       ),
-                      onPressed: () =>
-                          setState(() => _obscureConfirm = !_obscureConfirm),
+                      onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
                     ),
                   ),
                   validator: (value) {
@@ -222,53 +202,40 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     return null;
                   },
                 ),
-                
+
                 const SizedBox(height: 40),
-                
-                // Nút xác nhận
+
                 ElevatedButton(
                   onPressed: _isLoading ? null : _changePassword,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: themeColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
                   child: _isLoading
                       ? const CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation(Colors.white),
+                          valueColor: AlwaysStoppedAnimation(AppColors.textOnPrimary),
                         )
                       : const Text(
                           'Đặt lại mật khẩu',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                 ),
-                
+
                 const SizedBox(height: 20),
-                
+
                 // Thông tin bảo mật
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
+                    color: AppColors.info.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                    border: Border.all(color: AppColors.info.withOpacity(0.2)),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.info_outline, color: Colors.blue[700]),
+                      Icon(Icons.info_outline, color: AppColors.info),
                       const SizedBox(width: 12),
-                      const Expanded(
+                      Expanded(
                         child: Text(
                           'Mật khẩu mới của bạn phải có ít nhất 6 ký tự và khác với mật khẩu cũ.',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.black87,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onBackground,
                           ),
                         ),
                       ),

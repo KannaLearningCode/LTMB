@@ -1,8 +1,8 @@
-// lib/screens/auth/forgot_password_screen.dart
 import 'package:flutter/material.dart';
 import 'package:kfc_seller/Screens/Authen/otp_verification_screen.dart';
 import 'package:kfc_seller/Screens/Authen/email_service.dart';
 import 'package:kfc_seller/Screens/Authen/otp_service.dart';
+import 'package:kfc_seller/Theme/colors.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -32,30 +32,22 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   Future<void> _sendOTP() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     setState(() => _isLoading = true);
-    
+
     try {
-      // 1. Tạo mã OTP
       final otp = EmailService.generateOTP();
-      
-      // 2. Gửi OTP qua email
       final emailSent = await EmailService.sendOTPEmail(emailController.text, otp);
-      
+
       if (emailSent) {
-        // 3. Lưu OTP vào database
         final otpSaved = await OTPService.saveOTPToDatabase(emailController.text, otp);
-        
+
         if (otpSaved) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Mã OTP đã được gửi đến email của bạn!'),
-                backgroundColor: Colors.green,
-              ),
-            );
-            
-            // 4. Điều hướng đến màn hình xác thực OTP
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('Mã OTP đã được gửi đến email của bạn!'),
+              backgroundColor: AppColors.success,
+            ));
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -74,7 +66,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Lỗi: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -87,25 +79,23 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final themeColor = Colors.green;
+    final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.colorScheme.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: themeColor),
+          icon: const Icon(Icons.arrow_back_ios),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           "Quên mật khẩu",
-          style: TextStyle(
-            color: themeColor,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
+          style: theme.appBarTheme.titleTextStyle,
         ),
+        backgroundColor: theme.appBarTheme.backgroundColor,
+        foregroundColor: theme.appBarTheme.foregroundColor,
+        elevation: theme.appBarTheme.elevation,
+        centerTitle: theme.appBarTheme.centerTitle,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -116,16 +106,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 20),
-                const Text(
+                Text(
                   "Vui lòng nhập địa chỉ email của bạn. Bạn sẽ nhận được mã OTP để đặt lại mật khẩu.",
-                  style: TextStyle(
-                    color: Colors.black87,
-                    fontSize: 16,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.colorScheme.onBackground,
                   ),
                 ),
                 const SizedBox(height: 30),
-                
-                // Email input field
+
                 TextFormField(
                   controller: emailController,
                   keyboardType: TextInputType.emailAddress,
@@ -142,46 +130,26 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   },
                   decoration: InputDecoration(
                     labelText: "Email",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(25.0),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(25.0),
-                      borderSide: BorderSide(color: themeColor),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 20.0),
+                    // Sử dụng luôn theme
                     suffixIcon: _isEmailValidated
                         ? Padding(
                             padding: const EdgeInsets.only(right: 12.0),
-                            child: Icon(Icons.check, color: themeColor),
+                            child: Icon(Icons.check, color: AppColors.success),
                           )
                         : null,
                   ),
                 ),
                 const SizedBox(height: 30),
 
-                // Submit button
                 ElevatedButton(
                   onPressed: _isLoading ? null : _sendOTP,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: themeColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
                   child: _isLoading
                       ? const CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation(Colors.white),
+                          valueColor: AlwaysStoppedAnimation(AppColors.textOnPrimary),
                         )
                       : const Text(
                           "Gửi mã OTP",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                 ),
               ],
